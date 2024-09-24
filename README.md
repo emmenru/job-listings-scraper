@@ -6,4 +6,4 @@ scrape-countries : Script to scrape currently available data from job listnings 
 Please note:
 Ensure that your scraping activities are respectful of the website’s policies. Check the site's robots.txt file (e.g., https://www.indeed.com/robots.txt) to see what is allowed and what is disallowed. Ignoring these policies can result in legal issues or bans.
 
-This data was scraped on September 2024. 
+This data was scraped on September 19th (USA, Sweden) and 20th (France, Italy) 2024. 
