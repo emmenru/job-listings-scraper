@@ -301,11 +301,10 @@ def count_keywords(df, country, software_keywords):
     return result_df
 
 # Extract information about interview process (when available)
-
 def extract_stage_text(job_desc, stage_pattern, context_window=100):
     """
-    Extracts text around a matched stage pattern in the job description, but only within text following
-    a specified context pattern.
+    Extracts text around a matched stage pattern in the job description,
+    but only within text following a specified context pattern.
     
     Parameters:
     - job_desc: String containing the job description.
@@ -320,33 +319,27 @@ def extract_stage_text(job_desc, stage_pattern, context_window=100):
 
     # First, find the location of the context pattern
     context_match = re.search(context_pattern, job_desc, re.IGNORECASE)
+    
     if context_match:
         # Narrow down the text to start after the context pattern match
         context_start = context_match.end()
         text_after_context = job_desc[context_start:]
         
-        # Debug: print the restricted job description after the context pattern
-        print("----Text After Context Pattern----")
-        print(text_after_context[:500])  # Print the first 500 chars to verify it's trimmed correctly
-        
         # Now, search for the stage pattern within this limited text
         stage_match = re.search(stage_pattern, text_after_context, re.IGNORECASE)
+        
         if stage_match:
             # Calculate the adjusted start and end based on `text_after_context`
             start = max(0, stage_match.start() - 20)
             end = min(len(text_after_context), stage_match.end() + context_window)
             
-            # Debug: print the exact text being extracted for this pattern
-            print("----Extracted Text Around Stage Pattern----")
-            print(text_after_context[start:end])
+            # Print the extracted text
+            extracted_text = text_after_context[start:end].strip()
+            #print("----Extracted Text Around Stage Pattern----")
+            #print(extracted_text)
+            return extracted_text  # Return the extracted text
             
-            return text_after_context[start:end].strip()
-        else:
-            print("Stage pattern not found in the restricted text.")
-    else:
-        print("Context pattern not found in job description.")
-    
-    return None
+    return None  # Return None if no match is found
 
 
 def extract_interview_details(df):
@@ -363,13 +356,34 @@ def extract_interview_details(df):
         - Boolean indicator DataFrame showing True/False for the presence of each category.
     '''
     # Define patterns for each interview stage
+   
+    '''
     stages = {
-        'case_study': r'case study|take-home assignment|assessment project',
-        'coding_assessment': r'coding test|coding interview|programming assessment|technical assessment|live coding challenge',
-        'phone_screening': r'phone screening|phone interview|screening call',
-        'on_site_interview': r'on-site interview|final round|in-person interview',
-        'presentation': r'presentation|project presentation|technical presentation'
-    }
+    'phone_screening': r'phone screening|phone interview|screening call',
+    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen',
+    'case_study': r'case study|take-home assignment|business case',
+    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|SQL test|Python test',
+    'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions',
+    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview',
+    'presentation': r'project presentation|technical presentation'
+  }
+  '''
+    stages = {
+    'phone_screening': r'phone screening|phone interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju',
+    
+    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|évaluation technique|entrevue technique|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
+
+    'case_study': r'case study|take-home assignment|business case|étude de cas|assegnazione a casa|business case|caso studio|fallstudie|business case',
+
+    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|SQL test|Python test|test di programmazione|intervista di programmazione|assessment tecnico|test SQL|test Python|kodningsprov|programmeringstest|teknisk bedömning',
+
+    'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions|entretien comportemental|entretien culturel|entrevue RH|entrevue situationnelle|domande comportamentali|colloquio comportamentale|HR-intervju|beteendefrågor',
+
+    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview|entrevue sur place|dernière ligne droite|entrevue en personne|entrevue en panel|intervista in sede|colloquio finale|colloquio in presenza|intervista di gruppo|panelintervju|slutintervju',
+
+    'presentation': r'project presentation|technical presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
+}
+
     
     # Initialize lists to store extracted details and indicators
     interview_info = []
