@@ -1,6 +1,7 @@
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt 
+import seaborn as sns
 import re
 import nltk
 from nltk.corpus import stopwords
@@ -417,3 +418,59 @@ def extract_interview_details(df):
     interview_flags_df = pd.DataFrame(interview_flags)
 
     return interview_info_df, interview_flags_df
+
+####### PLOTTING 
+
+def plot_categorical(df, categorical_cols, top_n=10, horizontal=False):
+    """
+    Plots the distribution of specified categorical columns in a DataFrame.
+
+    Parameters:
+    - df: DataFrame containing the data.
+    - categorical_cols: List of categorical columns to plot.
+    - top_n: Integer specifying the number of top categories to display (default is 10).
+    - horizontal: Boolean specifying if the plot should be horizontal (default is False).
+    """
+    for col in categorical_cols:
+        plt.figure(figsize=(10, 6))
+        
+        # Count the top categories
+        top_categories = df[col].value_counts().nlargest(top_n)
+        
+        # Create a count plot
+        if horizontal:
+            sns.countplot(data=df, y=col, order=top_categories.index)
+        else:
+            sns.countplot(data=df, x=col, order=top_categories.index)
+        
+        plt.title(f'Top {top_n} Categories of Column: {col}')
+        
+        plt.xticks(rotation=45)
+        plt.show()
+
+def plot_numerical(df, numerical_cols):
+    """
+    Performs univariate analysis for specified numerical columns in a DataFrame.
+    
+    Parameters:
+    - df: DataFrame containing the data.
+    - numerical_cols: List of numerical columns to analyze.
+    """
+    for col in numerical_cols:
+        # Drop NaN values and check for valid data
+        valid_data = df[col].dropna()
+        
+        # Check if there are enough values to plot
+        # Summary statistics
+        print(f"Summary statistics for {col}:")
+        print(valid_data.describe())
+        print("\n")
+            
+        # Boxplot
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(x=valid_data)  # Use valid data for plotting
+        plt.title(f'Boxplot of Column {col}')
+        plt.xlabel(col)
+        plt.grid()
+        plt.show()
+     
