@@ -18,7 +18,7 @@ nltk.download('stopwords')
 def convert_salary(value):
     # Converts salary strings with thousand separators or decimal points into a float.
     return float(value.replace('\xa0', '').replace(' ', '').replace(',', '').replace('.', '').replace('..', '.'))
-
+        
 def preprocess_text(text):
     # Remove punctuation and make lowercase
     return re.sub(r'[^\w\s]', '', text.lower())
@@ -127,9 +127,9 @@ def desc_categorical(data):
 
 # Format, clean, and fix columns for salary column 
 def clean_columns(data):
-    '''
+    """
     Describe 
-    '''
+    """
     # Remove + signs and replace them with spaces in 'search_keyword' and 'search_location'
     data[['search_keyword', 'search_location']] = data[['search_keyword', 'search_location']].replace({r'\+': ' '}, regex=True)
     
@@ -151,7 +151,7 @@ def clean_columns(data):
 
     # Extract time period from 'salary' column using regex
     # par an since 'an' is an English word 
-    data['time_period'] = data['salary'].str.extract(r'(hour|year|month|week|day|ora|anno|mese|settimana|giorno|heure|par an|mois|semaine|jour|månad)')
+    data['time_period'] = data['salary'].str.extract(r'(hour|year|month|week|day|ora|anno|mese|settimana|giorno|heure|par an|par mois|semaine|jour|månad)')
 
     return data
 
