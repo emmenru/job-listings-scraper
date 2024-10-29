@@ -6,6 +6,7 @@ import re
 import nltk
 from nltk.corpus import stopwords
 from collections import Counter
+import requests 
 
 
 # Ensure NLTK stopwords are downloaded (run this once)
@@ -473,4 +474,44 @@ def plot_numerical(df, numerical_cols):
         plt.xlabel(col)
         plt.grid()
         plt.show()
-     
+
+import requests
+
+# Define the endpoint URL for multiple currency conversions
+url = "https://api.frankfurter.app/latest"
+params = {
+    'from': 'EUR',       # Set the base currency to EUR
+    'to': 'SEK,USD'      # List the target currencies separated by a comma
+}
+
+# Function to get exchange rate from one currency to another
+def get_exchange_rate(base_currency, target_currency):
+    """
+    This function makes a request to the Frankfurter.app API to retrieve current
+    exchange rate. 
+
+    Parameters:
+    base_currency (str): The currency code of the base currency (e.g., 'SEK', 'USD').
+    target_currency (str): The currency code of the target currency (e.g., 'EUR').
+
+    Returns:
+    float: The exchange rate from base_currency to target_currency if successful,
+           None otherwise.'
+    
+    """
+    url = "https://api.frankfurter.app/latest"
+    params = {
+        'from': base_currency,
+        'to': target_currency
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        data = response.json()
+        
+        # Return the exchange rate
+        return data['rates'][target_currency]
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching exchange rate from {base_currency} to {target_currency}: {e}")
+        return None
