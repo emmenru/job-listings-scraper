@@ -13,12 +13,7 @@ import requests
 nltk.download('stopwords')
 
 # Helper functions 
-
-# Salary conversion function to handle both thousand separators and decimal points
-def convert_salary(value):
-    # Converts salary strings with thousand separators or decimal points into a float.
-    return float(value.replace('\xa0', '').replace(' ', '').replace(',', '').replace('.', '').replace('..', '.'))
-        
+    
 def preprocess_text(text):
     # Remove punctuation and make lowercase
     return re.sub(r'[^\w\s]', '', text.lower())
@@ -125,6 +120,22 @@ def desc_categorical(data):
 
 # Functions for extracting salary information 
 
+
+# Salary conversion function to handle both thousand separators and decimal points
+def convert_salary(value):
+    # Converts salary strings with thousand separators or decimal points into a float.
+    return float(value.replace('\xa0', '').replace(' ', '').replace(',', '').replace('.', '').replace('..', '.'))
+
+"""
+New one 
+def convert_salary(value):
+    # Converts salary strings with thousand separators and decimal points into a float.
+    cleaned_value = value.replace('\xa0', '')  # Remove non-breaking spaces
+    cleaned_value = cleaned_value.replace(' ', '')  # Remove spaces (thousands separator)
+    cleaned_value = cleaned_value.replace(',', '.')  # Replace comma with dot for decimal
+    return float(cleaned_value)  # Convert to float
+"""
+
 # Format, clean, and fix columns for salary column 
 def clean_columns(data):
     """
@@ -148,10 +159,12 @@ def clean_columns(data):
     # If there is only one number put it in both low and high column
     data['salary_num_low'] = data['salary_num'].apply(lambda x: convert_salary(x[0]) if isinstance(x, list) and len(x) > 0 else np.nan)
     data['salary_num_high'] = data['salary_num'].apply(lambda x: convert_salary(x[0]) if isinstance(x, list) and len(x) == 1 else convert_salary(x[1]) if isinstance(x, list) and len(x) > 1 else np.nan)
-
+    # Hack for cases when there is a comma in the salary_num_high 
+    # data['salary_num_high']
+    
     # Extract time period from 'salary' column using regex
     # par an since 'an' is an English word 
-    data['time_period'] = data['salary'].str.extract(r'(hour|year|month|week|day|ora|anno|mese|settimana|giorno|heure|par an|par mois|semaine|jour|månad)')
+    data['time_period'] = data['salary'].str.extract(r'(hour|year|month|week|day|ora|anno|mese|settimana|giorno|heure|par an|mois|semaine|jour|månad)')
 
     return data
 
@@ -474,8 +487,6 @@ def plot_numerical(df, numerical_cols):
         plt.xlabel(col)
         plt.grid()
         plt.show()
-
-import requests
 
 # Define the endpoint URL for multiple currency conversions
 url = "https://api.frankfurter.app/latest"
