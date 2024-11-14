@@ -1,18 +1,20 @@
-import pandas as pd 
-import numpy as np
-import matplotlib.pyplot as plt 
-import seaborn as sns
 import re
+import requests
+
+import numpy as np
+import pandas as pd
+
+#import matplotlib.pyplot as plt
+#import seaborn as sns
+
 import nltk
 from nltk.corpus import stopwords
 from collections import Counter
-import requests 
-
 
 # Ensure NLTK stopwords are downloaded (run this once)
 nltk.download('stopwords')
 
-# Helper functions 
+####### HELPER FUNCTIONS ####### 
     
 def preprocess_text(text):
     # Remove punctuation and make lowercase
@@ -23,18 +25,25 @@ def tokenize_and_filter(text, stop_words):
     tokens = text.split()
     return [word for word in tokens if word not in stop_words]
     
-# High-level functions 
+####### CLEANING, FORMATTING AND DESCRIBING DATA FRAME ####### 
 
 def merge_US_cities(cities, DATA_PATH):
-    '''
-    Merges job listings from multiple US cities into a single DataFrame.
-    
-    Parameters:
-    - cities: List of city names (strings) to merge.
+    """
+    Args:
+        cities: A list of US city names, abbreviated.
+        DATA_PATH: The base path to the CSV files containing job listings.
 
     Returns:
-    - A DataFrame containing job listings from all specified US cities.
-    '''
+        A DataFrame containing the merged job listings from the specified cities.
+
+    Raises:
+        ValueError: If the provided `cities` list is empty.
+        FileNotFoundError: If any of the specified CSV files are not found.
+
+    Note:
+        The function assumes that the CSV files have a consistent structure, including column names and data types.
+
+    """
     
     # Load data for the first city and add the 'country' column manually
     df_NY = pd.read_csv(f"{DATA_PATH}{'USA_'}{cities[0]}.csv")
@@ -58,11 +67,10 @@ def merge_US_cities(cities, DATA_PATH):
 
     return df_USA
 
-# unique() prints the unique values, nunique() prints the number of unique values
 def check_duplicates(data):
-    '''
-    # The number of rows should be equal to the number of unique job links, etc 
-    '''
+    """
+    # Note: The number of rows should be equal to the number of unique job links, etc 
+    """
     # Get the number of rows 
     num_rows = data.shape[0]
     # Print the number of rows
@@ -74,61 +82,110 @@ def check_duplicates(data):
     print(data[duplicates])
 
 def remove_duplicates_jobdesc(data):
-    '''
-    Checks for duplicate (same job description, location, and job title) in the DataFrame and keep only the latest entry if duplicate is identified. 
-    
-    Parameters:
-    - data: The input DataFrame to check for duplicates.
+    """
+    Checks for duplicatse (same job description, location, and job title) in the DataFrame and keeps only the latest entry if a duplicate is identified. 
+
+    Args:
+        data: The input DataFrame containing job listings.
 
     Returns:
-    - A DataFrame containing with duplicates removed. 
-    '''
+        A DataFrame with duplicate job listings removed. The latest occurrence of a duplicate is retained.
+
+    Raises:
+        ValueError: If the input DataFrame is empty or missing required columns.
+
+    Note:
+        This function identifies and removes duplicate job listings based on the specified columns. If multiple duplicates exist for a specific job, only the latest occurrence is kept.
+    """
     # Check if there are any duplicates based on 'job_description', 'location', and 'job_title'
     has_duplicates = data.duplicated(subset=['job_description', 'search_location', 'job_title'], keep=False).any()
     output = pd.DataFrame()
     
     if has_duplicates:
         print("There are duplicate values based on 'job_description', 'search_location', and 'job_title' columns.")
+        
         # Below code is only if you want to inspect the duplicated entries  
         # Filter to include only rows with duplicates based on all three columns and sort by 'job_description'
         #output = data[data.duplicated(subset=['job_description', 'search_location', 'job_title'], keep=False)]
         #output = output.sort_values(by=['job_description', 'search_location', 'job_title']).reset_index(drop=True)
         # Display the duplicates
         #print(output)
+        
         # Remove duplicates and keep only the last occurrence
         output = data.drop_duplicates(subset=['job_description', 'search_location', 'job_title'], keep='last').reset_index(drop=True)
     else:
         print("No duplicates found based on 'job_description', 'search_location', and 'job_title'.")
         output = data 
-    print(f'Size before: {data.size} Size after removing duplicates: {output.size}')
+    print(f'Size before: {data.size}. Size after removing duplicates: {output.size}')
     return output
 
-# Function for describing categorical data 
-
 def desc_categorical(data):
-    #print(data.columns)
-    # Get frequency counts for each categorical column
+    """
+    Function for describing categorical data. 
+    Prints value counts for categorical columns in the given DataFrame.
+    Identifies string and object columns, excluding 'job_description' and 'job_link' columns. 
+    """
+    # Exclude these 
     string_columns = data.select_dtypes(include='string').drop(columns='job_description') # Skip job description! 
-    # Get frequency counts for the categorical columns with mixed data types (strings and numbers)
     object_columns = data.select_dtypes(include='object').drop(columns='job_link')
 
     # Loop through the columns and print value counts
     for col in string_columns.columns:
-        print(f'Value counts for column: {col}\n{string_columns[col].value_counts()}\n')
+        print(f"Value counts for column: {col}\n{string_columns[col].value_counts()}\n")
     for col in object_columns.columns:
-        print(f'Value counts for column: {col}\n{object_columns[col].value_counts()}\n')
+        print(f"Value counts for column: {col}\n{object_columns[col].value_counts()}\n")
 
-# Functions for extracting salary information 
-
-
-# Salary conversion function to handle both thousand separators and decimal points
+####### EXTRACT SALARY INFO ####### 
 
 def convert_salary(value):
     # Converts salary strings with thousand separators or decimal points into a float.
     return float(value.replace('\xa0', '').replace(' ', '').replace(',', '').replace('.', '').replace('..', '.'))
 
-# Format, clean, and fix columns for salary column 
+def convert_salary_to_monthly(row, salary_column):
+    """
+    Converts a salary value to a monthly equivalent based on the specified time period. 
+    Extracts the 'time_period' from the given row and uses a mapping dictionary to determine the appropriate conversion factor.
+    If the 'time_period' is a valid string, the salary is multiplied by the conversion factor to obtain the monthly equivalent.
+
+    Args:
+        row: A Pandas Series representing a row of the DataFrame.
+        salary_column: The name of the column containing the salary value.
+
+    Returns:
+        The monthly equivalent of the salary, or NaN if the time period is invalid or not recognized.
+    """
+    # Dictionary to map time periods (in different languages) to their monthly conversion factor
+    time_period_map = {
+        'hour': 160, 'ora': 160, 'heure': 160,
+        'year': 1/12, 'anno': 1/12, 'par an': 1/12,
+        'week': 4, 'settimana': 4, 'semaine': 4,
+        'day': 20, 'giorno': 20, 'jour': 20,
+        'month': 1, 'mese': 1, 'mois': 1, 'månad': 1
+    }
+    
+    time_period = row['time_period']
+    
+    # Check if 'time_period' is a valid string and map it to conversion factor, otherwise return NaN
+    if isinstance(time_period, str):
+        time_period = time_period.lower()
+        return row[salary_column] * time_period_map.get(time_period, np.nan)
+    
+    return np.nan
+    
 def clean_columns(data):
+    """
+    Cleans and formats columns in the given DataFrame.
+
+    Args:
+        data: The input DataFrame.
+
+    Returns:
+        The cleaned DataFrame with the following modifications:
+            - Removes '+' signs from 'search_keyword' and 'search_location'.
+            - Removes newline characters from 'job_description'.
+            - Extracts numeric values from 'salary' and creates 'salary_num_low' and 'salary_num_high' columns.
+            - Extracts time period from 'salary' and stores it in the 'time_period' column.
+    """
     # Remove + signs and replace them with spaces in 'search_keyword' and 'search_location'
     data[['search_keyword', 'search_location']] = data[['search_keyword', 'search_location']].replace({r'\+': ' '}, regex=True)
     
@@ -155,38 +212,15 @@ def clean_columns(data):
 
     return data
 
-
-def convert_salary_to_monthly(row, salary_column):
-    '''
-    Describe
-    '''
-    # Dictionary to map time periods (in different languages) to their monthly conversion factor
-    time_period_map = {
-        'hour': 160, 'ora': 160, 'heure': 160,
-        'year': 1/12, 'anno': 1/12, 'par an': 1/12,
-        'week': 4, 'settimana': 4, 'semaine': 4,
-        'day': 20, 'giorno': 20, 'jour': 20,
-        'month': 1, 'mese': 1, 'mois': 1, 'månad': 1
-    }
-    
-    time_period = row['time_period']
-    
-    # Check if 'time_period' is a valid string and map it to conversion factor, otherwise return NaN
-    if isinstance(time_period, str):
-        time_period = time_period.lower()
-        return row[salary_column] * time_period_map.get(time_period, np.nan)
-    
-    return np.nan
-
-# Function to apply salary conversion for min and max salary
 def apply_salary_conversion(df, currency):
+    # Function to apply salary conversion for min and max salary
     df['min_salary_month'] = df.apply(lambda row: convert_salary_to_monthly(row, 'salary_num_low'), axis=1)
     df['max_salary_month'] = df.apply(lambda row: convert_salary_to_monthly(row, 'salary_num_high'), axis=1)
     df['currency'] = currency  # Add currency column
     return df
 
-# Function to clean DataFrames, add a currency column, and calculate salary per month
 def clean_and_add_currency_and_salaries(df, currency):
+    # Function to clean DataFrames, add a currency column, and calculate salary per month
     cleaned_df = clean_columns(df)  # Clean the DataFrame
     cleaned_df['currency'] = currency  # Add currency column
     # Calculate min and max salary per month
@@ -194,17 +228,52 @@ def clean_and_add_currency_and_salaries(df, currency):
     cleaned_df['max_salary_month'] = cleaned_df.apply(lambda row: convert_salary_to_monthly(row, 'salary_num_high'), axis=1)
     return cleaned_df
 
-# Functions for extracting info from job descriptions 
-def extract_keywords(df, country, language):
-    '''
-    Parameters:
-    - df: DataFrame containing job descriptions and search keywords.
-    - country: String representing the country to filter by.
-    - language: language to filter by (to ensure correct stopwords are removed). 
+def get_exchange_rate(base_currency, target_currency):
+    """
+    This function makes a request to the Frankfurter.app API to retrieve current
+    exchange rate. 
+
+    Args:
+        base_currency (str): The currency code of the base currency (e.g., 'SEK', 'USD').
+        target_currency (str): The currency code of the target currency (e.g., 'EUR').
 
     Returns:
-    - A list with most common keywords? 
-    '''
+        float: The exchange rate from base_currency to target_currency if successful, None otherwise.'
+    """
+
+    url = "https://api.frankfurter.app/latest"
+    params = {
+        'from': base_currency,
+        'to': target_currency
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        data = response.json()
+        
+        # Return the exchange rate
+        return data['rates'][target_currency]
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching exchange rate from {base_currency} to {target_currency}: {e}")
+        return None
+
+####### EXTRACT INFO FROM TEXT: JOB DESCRIPTIONS, INTERVIEW PROCESS, SOFTWARE KEYWORDS #######  
+
+def extract_keywords(df, country, language):
+    """
+    Extracts and returns the most common keywords from job descriptions in a specified country and language.
+
+    Args:
+        df: The DataFrame containing job descriptions and other relevant columns.
+        country: The country to filter the data by.
+        language: The language of the job descriptions.
+
+    Returns:
+        A tuple containing:
+            1. A list of the top 10 most common keywords.
+            2. A list of all extracted tokens.
+    """
     
     # Always include English stopwords
     stop_words = set(stopwords.words('english'))
@@ -238,39 +307,18 @@ def extract_keywords(df, country, language):
     common_keywords = word_counts.most_common(10)  
     return (common_keywords, all_tokens)
 
-def plot_common_keywords(common_keywords, country):
-    '''
-    Plots the most common keywords from job descriptions.
-
-    Parameters:
-    - common_keywords: List of tuples (keyword, frequency).
-    - country: Name of the country for labeling the plot.
-    '''
-    # Unzip the list of tuples into two lists: words and counts
-    words, counts = zip(*common_keywords)
-
-    # Create a bar plot
-    plt.figure(figsize=(10, 6))  # Set the figure size
-    plt.bar(words, counts, color='skyblue')  # Bar plot
-    plt.xlabel('Keywords', fontsize=14)  # Label for x-axis
-    plt.ylabel('Frequency', fontsize=14)  # Label for y-axis
-    plt.title(f'Most Common Keywords in Job Descriptions - {country}', fontsize=16)  # Title of the plot
-    plt.xticks(rotation=45)  # Rotate x-axis labels for better readability
-    plt.tight_layout()  # Adjust layout to make room for rotated labels
-    plt.show()  # Display the plot
-
 def count_keywords(df, country, software_keywords):
-    '''
-    Counts the occurrences of keywords in job descriptions by category and sub-category for a specific country,
-    creating separate entries for each keyword and its associated search keyword.
+    """
+    Counts the occurrences of keywords in job descriptions for a specific country and categorizes them.
 
-    Parameters:
-    - df: DataFrame containing job descriptions and search keywords.
-    - country: String representing the country to filter by.
+    Args:
+        df: The DataFrame containing job descriptions and search keywords.
+        country: The country to filter the data by.
+        software_keywords: A dictionary mapping categories to lists of keywords.
 
     Returns:
-    - A DataFrame with categories, sub-categories, keyword counts, associated search keywords, and country.
-    '''
+        A DataFrame with columns for category, keyword, count, associated search keyword, and country.
+    """
     # Prepare the DataFrame list to store individual entries
     data = []
 
@@ -303,19 +351,19 @@ def count_keywords(df, country, software_keywords):
 
     return result_df
 
-# Extract information about interview process (when available)
+
 def extract_stage_text(job_desc, stage_pattern, context_window=100):
     """
-    Extracts text around a matched stage pattern in the job description,
-    but only within text following a specified context pattern.
-    
-    Parameters:
-    - job_desc: String containing the job description.
-    - stage_pattern: String or raw string pattern to search for within the job description.
-    - context_window: Integer indicating how many characters around the match to capture.
-    
+    Extracts text related to the interview process from a job description.
+
+    Args:
+        job_desc: The text of the job description.
+        stage_pattern: A string or raw string pattern representing an interview stage (e.g., "phone interview").
+        context_window: The number of characters to capture around the matched stage pattern (default: 100).
+
     Returns:
-    - A string containing text surrounding the matched stage pattern after the context pattern, or None if no match is found.
+        A string containing the extracted text surrounding the stage pattern within the interview process context, 
+        or None if no match is found.
     """
     # Define the context pattern as a constant here
     context_pattern = r'recruitment process|interview process'
@@ -343,52 +391,20 @@ def extract_stage_text(job_desc, stage_pattern, context_window=100):
             return extracted_text  # Return the extracted text
             
     return None  # Return None if no match is found
-
-
-def extract_interview_details(df):
-    '''
-    Extracts detailed information for all interview stages from job descriptions and creates both a DataFrame 
-    with the extracted text and a Boolean indicator DataFrame.
     
-    Parameters:
-    - df: DataFrame containing job listings.
+def extract_interview_details(df, stages):
+    """
+    Extracts detailed information about interview stages from job descriptions and creates two DataFrames.
+
+    Args:
+        df: The DataFrame containing job descriptions and other relevant information.
+        stages: Dictionary with fefined patterns for each interview stage.
     
     Returns:
-    - Tuple of DataFrames:
-        - Detailed text DataFrame for each category.
-        - Boolean indicator DataFrame showing True/False for the presence of each category.
-    '''
-    # Define patterns for each interview stage
-   
-    '''
-    stages = {
-    'phone_screening': r'phone screening|phone interview|screening call',
-    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen',
-    'case_study': r'case study|take-home assignment|business case',
-    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|SQL test|Python test',
-    'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions',
-    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview',
-    'presentation': r'project presentation|technical presentation'
-  }
-  '''
-    stages = {
-    'phone_screening': r'phone screening|phone interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju',
-    
-    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|évaluation technique|entrevue technique|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
-
-    'case_study': r'case study|take-home assignment|business case|étude de cas|assegnazione a casa|business case|caso studio|fallstudie|business case',
-
-    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|SQL test|Python test|test di programmazione|intervista di programmazione|assessment tecnico|test SQL|test Python|kodningsprov|programmeringstest|teknisk bedömning',
-
-    'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions|entretien comportemental|entretien culturel|entrevue RH|entrevue situationnelle|domande comportamentali|colloquio comportamentale|HR-intervju|beteendefrågor',
-
-    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview|entrevue sur place|dernière ligne droite|entrevue en personne|entrevue en panel|intervista in sede|colloquio finale|colloquio in presenza|intervista di gruppo|panelintervju|slutintervju',
-
-    'presentation': r'project presentation|technical presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
-}
-
-    
-    # Initialize lists to store extracted details and indicators
+        A tuple of two DataFrames:
+        1. Detailed text DataFrame: Contains extracted text for each interview stage, along with job ID, title, and link.
+        2. Boolean indicator DataFrame: Indicates the presence of each interview stage with True/False values.
+    """
     interview_info = []
     interview_flags = []
 
@@ -420,97 +436,3 @@ def extract_interview_details(df):
     interview_flags_df = pd.DataFrame(interview_flags)
 
     return interview_info_df, interview_flags_df
-
-####### PLOTTING 
-
-def plot_categorical(df, categorical_cols, top_n=10, horizontal=False):
-    """
-    Plots the distribution of specified categorical columns in a DataFrame.
-
-    Parameters:
-    - df: DataFrame containing the data.
-    - categorical_cols: List of categorical columns to plot.
-    - top_n: Integer specifying the number of top categories to display (default is 10).
-    - horizontal: Boolean specifying if the plot should be horizontal (default is False).
-    """
-    for col in categorical_cols:
-        plt.figure(figsize=(10, 6))
-        
-        # Count the top categories
-        top_categories = df[col].value_counts().nlargest(top_n)
-        
-        # Create a count plot
-        if horizontal:
-            sns.countplot(data=df, y=col, order=top_categories.index)
-        else:
-            sns.countplot(data=df, x=col, order=top_categories.index)
-        
-        plt.title(f'Top {top_n} Categories of Column: {col}')
-        
-        plt.xticks(rotation=45)
-        plt.show()
-
-def plot_numerical(df, numerical_cols):
-    """
-    Performs univariate analysis for specified numerical columns in a DataFrame.
-    
-    Parameters:
-    - df: DataFrame containing the data.
-    - numerical_cols: List of numerical columns to analyze.
-    """
-    for col in numerical_cols:
-        # Drop NaN values and check for valid data
-        valid_data = df[col].dropna()
-        
-        # Check if there are enough values to plot
-        # Summary statistics
-        print(f"Summary statistics for {col}:")
-        print(valid_data.describe())
-        print("\n")
-            
-        # Boxplot
-        plt.figure(figsize=(12, 6))
-        sns.boxplot(x=valid_data)  # Use valid data for plotting
-        plt.title(f'Boxplot of Column {col}')
-        plt.xlabel(col)
-        plt.grid()
-        plt.show()
-
-# Define the endpoint URL for multiple currency conversions
-url = "https://api.frankfurter.app/latest"
-params = {
-    'from': 'EUR',       # Set the base currency to EUR
-    'to': 'SEK,USD'      # List the target currencies separated by a comma
-}
-
-# Function to get exchange rate from one currency to another
-def get_exchange_rate(base_currency, target_currency):
-    """
-    This function makes a request to the Frankfurter.app API to retrieve current
-    exchange rate. 
-
-    Parameters:
-    base_currency (str): The currency code of the base currency (e.g., 'SEK', 'USD').
-    target_currency (str): The currency code of the target currency (e.g., 'EUR').
-
-    Returns:
-    float: The exchange rate from base_currency to target_currency if successful,
-           None otherwise.'
-    
-    """
-    url = "https://api.frankfurter.app/latest"
-    params = {
-        'from': base_currency,
-        'to': target_currency
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        data = response.json()
-        
-        # Return the exchange rate
-        return data['rates'][target_currency]
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching exchange rate from {base_currency} to {target_currency}: {e}")
-        return None

@@ -59,3 +59,20 @@ software_keywords = {
         'databricks', 'knime', 'h2o.ai', 'rapidminer', 'datarobot', 'mlflow'
     ]
 }
+
+# Dictionary with interview keywords 
+interview_stages = {
+    'phone_screening': r'phone screening|phone interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju',
+    
+    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|évaluation technique|entrevue technique|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
+
+    'case_study': r'case study|take-home assignment|business case|étude de cas|assegnazione a casa|business case|caso studio|fallstudie|business case',
+
+    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|SQL test|Python test|test di programmazione|intervista di programmazione|assessment tecnico|test SQL|test Python|kodningsprov|programmeringstest|teknisk bedömning',
+
+    'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions|entretien comportemental|entretien culturel|entrevue RH|entrevue situationnelle|domande comportamentali|colloquio comportamentale|HR-intervju|beteendefrågor',
+
+    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview|entrevue sur place|dernière ligne droite|entrevue en personne|entrevue en panel|intervista in sede|colloquio finale|colloquio in presenza|intervista di gruppo|panelintervju|slutintervju',
+
+    'presentation': r'project presentation|technical presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
+}
