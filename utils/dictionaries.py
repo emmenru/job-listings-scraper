@@ -3,7 +3,7 @@ dtype_dict = {
     'page': 'int64',  
     'country': 'string', 
     'job_link': 'object', 
-    'search_keyword': 'string', 
+    'search_keyword': 'category', 
     'search_location': 'string', 
     'job_title': 'string', 
     'company_name': 'string', 
