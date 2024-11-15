@@ -89,7 +89,7 @@ def remove_duplicates_jobdesc(data):
     else:
         print("No duplicates found based on 'job_description', 'search_location', and 'job_title'.")
         output = data 
-    print(f'Size before: {data.size}. Size after removing duplicates: {output.size}')
+    print(f'Size before: {data.size}. Size after removing duplicates: {output.size} \n')
     return output
 
 def desc_categorical(data):
