@@ -98,19 +98,3 @@ def process_job_descriptions(df: pd.DataFrame,
         df.at[idx, 'time_period'] = time_period
     
     return df
-
-# Test with sample data
-data = {
-    'job_description': [
-        "Software Engineer salary $80,000 - $120,000 per year",
-        "Développeur web, salaire 35000€ - 45000€ par an",
-        "Programmatore, stipendio €30.000 - €40.000 all'anno",
-        "Systemutvecklare, lön 35000-45000 kr per månad"
-    ],
-    'language': [
-        'english',
-        'french',
-        'italian',
-        'swedish'
-    ]
-}

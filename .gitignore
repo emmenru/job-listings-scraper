@@ -5,3 +5,4 @@ __pycache__/
 salary-env/
 job-listing-env/
 /salary_env
+*.pyc
