@@ -14,9 +14,9 @@ dtype_dict = {
 
 # Dictionary of data frames and their corresponding currencies
 currency_mapping = {
-    'SWE': 'SEK',  # Swedish Krona
-    'FRA': 'EUR',  # Euro
-    'ITA': 'EUR',  # Euro
+    'Sweden': 'SEK',  # Swedish Krona
+    'France': 'EUR',  # Euro
+    'Italy': 'EUR',  # Euro
     'USA': 'USD'   # US Dollar
 }
 
@@ -76,3 +76,13 @@ interview_stages = {
 
     'presentation': r'project presentation|technical presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
 }
+
+# Dictionary to map time periods to monthly conversion factors
+time_period_map = {
+    'hour': 160, 'ora': 160, 'heure': 160,
+    'year': 1/12, 'anno': 1/12, 'par an': 1/12,
+    'week': 4, 'settimana': 4, 'semaine': 4,
+    'day': 20, 'giorno': 20, 'jour': 20,
+    'month': 1, 'mese': 1, 'mois': 1, 'månad': 1
+    }
+    

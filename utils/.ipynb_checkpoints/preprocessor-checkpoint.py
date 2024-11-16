@@ -48,7 +48,7 @@ def check_duplicates(data):
     num_rows = data.shape[0]
     # Print the number of rows
     print(f'The DataFrame has {num_rows} rows.')
-    print(data.nunique()) 
+    #print(data.nunique()) 
     # Check for duplicates in all columns
     duplicates = data.duplicated(keep=False)
     # Print duplicate rows 
