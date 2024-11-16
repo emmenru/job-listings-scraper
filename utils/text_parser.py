@@ -9,7 +9,7 @@ from nltk.corpus import stopwords
 from nltk import download
 from collections import Counter
 
-# Download stopwords once (outside functions)
+# Download stopwords once 
 downloaded_stopwords = {}
 def download_stopwords(language):
   if language not in downloaded_stopwords:

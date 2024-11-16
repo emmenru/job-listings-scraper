@@ -20,6 +20,14 @@ currency_mapping = {
     'USA': 'USD'   # US Dollar
 }
 
+# Dictionary for mapping language lables to languages 
+language_map = {
+    "en": "english",
+    "fr": "french",
+    "it": "italian",
+    "sv": "swedish"
+}
+
 # Dictionary with common software/programming tools keywords 
 software_keywords = {
     'Programming Languages': [
