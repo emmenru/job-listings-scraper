@@ -1,12 +1,63 @@
 import re
 import pandas as pd
+import string
+from langdetect import detect, LangDetectException
 import nltk
+nltk.download('punkt')
 from nltk.corpus import stopwords
+from nltk import download
 from collections import Counter
 
-# Ensure NLTK stopwords are downloaded (run this once)
-nltk.download('stopwords')
+# Download stopwords once (outside functions)
+downloaded_stopwords = {}
+def download_stopwords(language):
+  if language not in downloaded_stopwords:
+    downloaded_stopwords[language] = set(stopwords.words(language))
 
+# Function to detect language (consider more specific error handling)
+def detect_language(text):
+  try:
+    return detect(text)
+  except LangdetectException as e:
+    # Handle specific language detection exceptions here
+    return 'Unknown'
+
+# Function to normalize text based on language
+def normalize_text(text, language_code):
+  # Map language codes to language names
+  language_map = {
+      "en": "english",
+      "fr": "french",
+      "it": "italian",
+      "sv": "swedish",
+      # Add more language mappings as needed
+  }
+
+  # Get the language name from the language code
+  language = language_map.get(language_code, "Unknown")  # Default to "Unknown"
+
+  # Download stopwords once per language (if not already downloaded)
+  download_stopwords(language)
+
+  # Lowercase
+  text = text.lower()
+
+  # Remove stop words
+  stop_words = downloaded_stopwords[language]
+  words = [word for word in text.split() if word not in stop_words]
+
+  # Remove punctuation
+  words = [word.strip(string.punctuation) for word in words]
+
+  # Choose either stemming or lemmatization
+  stemmer = nltk.PorterStemmer()  # Use stemming (uncomment lemmatizer for lemmatization)
+  words = [stemmer.stem(word) for word in words]
+  # lemmatizer = WordNetLemmatizer()
+  # words = [lemmatizer.lemmatize(word) for word in words]
+
+  # Join words back into a string
+  normalized_text = ' '.join(words)
+  return normalized_text
     
 def tokenize_and_filter(text, stop_words):
     # Tokenization: split text into words and remove stopwords
