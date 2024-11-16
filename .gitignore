@@ -1,8 +1,5 @@
-__pycache__/
+*__pycache__/
 *.ipynb_checkpoint
 *.DS_Store
 *.ipynb
-salary-env/
-job-listing-env/
-/salary_env
-*.pyc
+salary_env/
