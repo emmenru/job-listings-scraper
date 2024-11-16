@@ -4,6 +4,7 @@ import string
 from langdetect import detect, LangDetectException
 import nltk
 nltk.download('punkt')
+nltk.download('wordnet')
 from nltk.corpus import stopwords
 from nltk import download
 from collections import Counter
@@ -50,10 +51,10 @@ def normalize_text(text, language_code):
   words = [word.strip(string.punctuation) for word in words]
 
   # Choose either stemming or lemmatization
-  stemmer = nltk.PorterStemmer()  # Use stemming (uncomment lemmatizer for lemmatization)
-  words = [stemmer.stem(word) for word in words]
-  # lemmatizer = WordNetLemmatizer()
-  # words = [lemmatizer.lemmatize(word) for word in words]
+  #stemmer = nltk.PorterStemmer()  # Use stemming (uncomment lemmatizer for lemmatization)
+  #words = [stemmer.stem(word) for word in words]
+  lemmatizer = nltk.WordNetLemmatizer()
+  words = [lemmatizer.lemmatize(word) for word in words]
 
   # Join words back into a string
   normalized_text = ' '.join(words)
