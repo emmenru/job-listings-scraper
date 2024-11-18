@@ -3,7 +3,7 @@ from typing import List, Optional
 import pandas as pd
 import numpy as np
 
-DEBUG = True
+DEBUG = False
 
 def get_currency_patterns(country: str) -> dict:
 	"""
@@ -124,7 +124,8 @@ def process_job_descriptions(df: pd.DataFrame,
 						df_out.at[idx, 'time_period'] = extract_time_unit(context)
 						df_out.at[idx, 'salary_extraction_success'] = True
 						df_out.at[idx, 'context_string'] = context
-						print(f"Min value: {filtered_numbers[0]}, Max value: {filtered_numbers[-1]}")
+						if DEBUG:
+							print(f"Min value: {filtered_numbers[0]}, Max value: {filtered_numbers[-1]}")
 						break  # Stop processing after finding a valid salary context
 
 		except Exception as e:
