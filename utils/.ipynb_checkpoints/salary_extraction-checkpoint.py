@@ -2,26 +2,6 @@ import re
 import pandas as pd
 import numpy as np
 
-EXCLUDED_PATTERNS = {
-   'usa': [
-       r'id \d+',
-       r'us-\d+', 
-       r'\d+\.?\d*\s*billion',
-       r'\d+ pay detail',
-       r'child low \d+',
-       r'retirement plan like \d+ dollar-for-dollar',
-       r'\d+ per-capita healthcare',
-       r' leave \d+'
-   ],
-   'sweden': [
-       r'avdrag|castra|grundades \d+',
-       r'\d+\s*(år|miljarder|uppdrag)',  # Exclude entries with 'nummer år' och 'nummer miljarder'
-       r'(health|wellness) (contribution|allowance)\s*(sek\s*)?\d+',
-       r'\b\d{2}-\d{2}-\d{4}\b', # Swedish dates
-       r'tjänstepension itp1\s*\d+', 
-       r'\d+\s*dagars semester'
-    ]
-}
 
 # Base English terms (used across all countries, since some ads are in English)
 ENGLISH_TERMS = "salary|compensation|pay|wage"
@@ -33,6 +13,14 @@ SALARY_TERMS = {
     'sweden': [f"lön|betalning|{ENGLISH_TERMS}"],  # Swedish terms + English terms
     'italy': [ENGLISH_TERMS]
 }
+
+NUMBER_PATTERNS = {
+   'usa': r'\b\d+(?:,\d{3})*(?:\.\d+)?(?:k)?\b',
+   'sweden': r'\b\d+(?:\s?\d{3})*(?:,\d+)?\b',  
+   'france': r'\b\d+(?:\.\d+)?(?:[,\d]*\d)?\b',
+   'italy': r'\b\d+(?:\.?\d{3})*(?:,\d+)?\b'
+}
+
 
 def get_currency_patterns(country: str) -> dict:
     """ Get currency patterns for different countries."""
@@ -46,7 +34,6 @@ def get_currency_patterns(country: str) -> dict:
     return patterns.get(country.lower(), {})
 
 def extract_time_unit(text: str) -> str:
-    # This should change depending on language used 
     """Extract payment time unit from text."""
     if re.search(r'\b(?:per\s+hour|hourly|/hour|/hr|/h)\b', text, re.I):
         return 'per hour'
@@ -64,40 +51,25 @@ def expand_context_for_numbers(text, start, end):
         end += 1
     return start, end
 
-
 def extract_numbers(text, country):
-    """
-    Extract valid numeric values depending on country format.
-    
-    Args:
-    - text (str): The input text containing numbers.
-    - country (str): The country format ('usa' or 'sweden').
-
-    Returns:
-    - List[float]: A list of extracted numbers in float format.
-    """
-    if country == 'usa':   
-        # US format: 300, 30,000, 30000.00, or 30k
-        pattern = r'\b\d+(?:,\d{3})*(?:\.\d+)?(?:k)?\b'
-        return (
-            pd.Series(re.findall(pattern, text))
-            .dropna()
-            .loc[lambda x: ~x.str.startswith('0') & ~x.str.contains('401')]
-            .map(lambda x: float(x[:-1].replace(',', '')) * 1000 if x.endswith('k') 
-                 else float(x.replace(',', '')))
-            .tolist()
-        )
-    elif country == 'sweden': 
-        # Swedish format: 300, 30 000, 30 000,00
-        pattern = r'\b\d+(?:\s?\d{3})*(?:,\d+)?\b'
-        return (
-            pd.Series(re.findall(pattern, text))
-            .dropna()
-            .map(lambda x: float(x.replace(' ', '').replace(',', '.')))
-            .tolist()
-        )
-    else:
-        raise ValueError("Unsupported country format.")
+   if country not in NUMBER_PATTERNS:
+       raise ValueError("Unsupported country format.")
+       
+   numbers = pd.Series(re.findall(NUMBER_PATTERNS[country], text)).dropna()
+   
+   if country == 'usa':
+       numbers = numbers[~numbers.str.startswith('0')]
+       return numbers.apply(lambda x: float(x[:-1].replace(',', '')) * 1000 if x.endswith('k') 
+                          else float(x.replace(',', ''))).tolist()
+   
+   elif country == 'sweden':
+       return numbers.apply(lambda x: float(x.replace(' ', '').replace(',', '.'))).tolist()
+       
+   elif country == 'france':
+       return numbers.apply(lambda x: float(x.replace(' ', '').replace(',', ''))).tolist()
+       
+   else:  # italy
+       return numbers.apply(lambda x: float(x.replace('.', '').replace(',', '.'))).tolist()
        
 def detect_salary_magnitude_mismatch(df: pd.DataFrame) -> pd.DataFrame:
     """Detect rows with salary magnitude mismatch."""
@@ -107,11 +79,18 @@ def detect_salary_magnitude_mismatch(df: pd.DataFrame) -> pd.DataFrame:
                      df[mask]['min_salary'].astype(int).astype(str).str.len()).abs()
     
     return df[mask & (magnitude_diff >= 2)][['min_salary', 'max_salary', 'context_string']]
+
+
+def extract_salary_info(text: str, currencies: dict, country: str, language: str = 'english') -> pd.Series:
+    SALARY_LIMITS = {
+        'usa': {'hourly': (1, 1000), 'other': (15000, 1000000)},
+        'france': {'hourly': (1, 500), 'other': (1000, 100000)},
+        'sweden': {'hourly': (250, 10000), 'other': (6000, 1000000)},
+        'italy': {'hourly': (1, 500), 'other': (15000, 500000)}
+    }
     
-def extract_salary_info(text: str, currencies: dict, country: str) -> pd.Series:
-    """Extract salary information from text."""
     default_result = pd.Series({k: None for k in ['min_salary', 'max_salary', 'currency', 
-                              'time_period', 'context_string']} | {'salary_extraction_success': False})
+                              'time_period', 'context_string', 'initial_numbers']} | {'salary_extraction_success': False})
     
     if not isinstance(text, str):
         return default_result
@@ -125,18 +104,30 @@ def extract_salary_info(text: str, currencies: dict, country: str) -> pd.Series:
                 start, end = expand_context_for_numbers(text, start, end)
                 context = text[start:end]
                 
-                if numbers := [n for n in extract_numbers(context, country) 
-                             if n != 0 and not any(re.search(pat.replace(r'\d+', r'\d*\.?\d*'), context) 
-                                                 for pat in EXCLUDED_PATTERNS.get(country.lower(), []))]: # Get specific excluded patterns for country 
+                initial_numbers = extract_numbers(context, country)
+                initial_numbers = [n for n in initial_numbers if n != 0]
+                time_period = extract_time_unit(context)
+                
+                limits = SALARY_LIMITS[country.lower()]
+                min_limit, max_limit = limits['hourly'] if time_period == 'per hour' else limits['other']
+                
+                numbers = [n for n in initial_numbers if min_limit <= n <= max_limit]
+                
+                print(f"initial numbers: {initial_numbers}")
+                print(f"filtered numbers: {numbers}")
+                
+                if numbers:
                     return pd.Series({
                         'min_salary': min(numbers),
                         'max_salary': max(numbers),
                         'currency': currency_symbol,
-                        'time_period': extract_time_unit(context),
+                        'time_period': time_period,
                         'context_string': context,
+                        'initial_numbers': initial_numbers,
                         'salary_extraction_success': True
                     })
-    except Exception:
+    except Exception as e:
+        print(f"Error: {e}")
         return default_result
     
     return default_result
