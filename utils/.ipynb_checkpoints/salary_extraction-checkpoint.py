@@ -57,8 +57,6 @@ def expand_context_for_numbers(text, start, end):
         end += 1
     return start, end
 
-def filter_numbers_with_exclusion(numbers, context, exclusion_terms):
-    pass 
 
 def process_job_descriptions(df: pd.DataFrame, 
                            country: str, 
@@ -78,8 +76,16 @@ def process_job_descriptions(df: pd.DataFrame,
     df_out[['min_salary', 'max_salary', 'currency', 'time_period', 'context_string']] = None  # Create new columns 
     df_out['salary_extraction_success'] = False
 
-    # List of terms to check for exclusion (e.g., "billion")
-    exclusion_terms = ['billion', 'pay detail', 'health insurance', 'pay detail']
+    # Terms to check for exclusion (e.g., ids and health care benefits)
+    excluded_patterns = [
+        r'\d+ billion',
+        r'id \d+',
+        r'us-\d+',
+        r'\d+ pay detail',
+        r'child low \d+', 
+        r'retirement plan like \d+ dollar-for-dollar', 
+        r'\d+ per-capita healthcare',
+        r' leave \d+']
 
     currencies = get_currency_patterns(country)
 
@@ -101,20 +107,19 @@ def process_job_descriptions(df: pd.DataFrame,
 
                     context = text[start:end]
 
-                    # Skip contexts mentioning work week schedules
-                    if re.search(r'\b\d+\s*/\s*\d+\s*standard\s*work\s*schedule\b', context, re.IGNORECASE):
-                        continue
-
                     if DEBUG:
                         print(f"\nRow {idx}: Found {currency_symbol}")
                         print(f"Context: '{context}'")
 
                     # Extract numbers from the expanded context
                     numbers = extract_numbers(context)
-                    # Filter out numbers that are unreasonable outliers (this is not working)
-                    filtered_numbers = numbers
+                    # Skip numbers that have value 0, starts with 0, or includes exclusion terms defined above
+                    filtered_numbers = [num for num in numbers if num != 0 and 
+                                        not any(re.search(pattern, context.lower()) for pattern in excluded_patterns) and
+                                        not str(num).startswith('0')]
                     
                     if len(filtered_numbers) >= 1:  # If at least one valid number is found and values not zero
+                        # Remove numbers if it seems this is not a salary number 
                         filtered_numbers = sorted(filtered_numbers)
                         if DEBUG:
                             print(f"Filtered numbers: {filtered_numbers}")
