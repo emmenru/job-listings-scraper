@@ -2,7 +2,7 @@ import re
 import pandas as pd
 import numpy as np
 
-excluded_patterns = {
+EXCLUDED_PATTERNS = {
    'usa': [
        r'id \d+',
        r'us-\d+', 
@@ -14,28 +14,39 @@ excluded_patterns = {
        r' leave \d+'
    ],
    'sweden': [
-       r'id \d+',
-       # Add more here
-   ]
+       r'avdrag|castra|grundades \d+',
+       r'\d+\s*(år|miljarder|uppdrag)',  # Exclude entries with 'nummer år' och 'nummer miljarder'
+       r'(health|wellness) (contribution|allowance)\s*(sek\s*)?\d+',
+       r'\b\d{2}-\d{2}-\d{4}\b', # Swedish dates
+       r'tjänstepension itp1\s*\d+', 
+       r'\d+\s*dagars semester'
+    ]
+}
+
+# Base English terms (used across all countries, since some ads are in English)
+ENGLISH_TERMS = "salary|compensation|pay|wage"
+
+# Country-specific terms, merged with English terms where needed
+SALARY_TERMS = {
+    'usa': [ENGLISH_TERMS],
+    'france': [ENGLISH_TERMS],
+    'sweden': [f"lön|betalning|{ENGLISH_TERMS}"],  # Swedish terms + English terms
+    'italy': [ENGLISH_TERMS]
 }
 
 def get_currency_patterns(country: str) -> dict:
-    """
-    Get currency patterns for different countries.
-    
-    Args:
-        country: A string specifying the country
-    Returns:
-        Dictionary of currency regex patterns
-    """
+    """ Get currency patterns for different countries."""
+    euro_pattern = {'€': r'€', 'eur': r'\b(?:eur|euros?)\b'}
     patterns = {
         'sweden': {'kr': r'kr|kronor', 'sek': r'\b(?:sek)\b'},
-        'france': {'€': r'€', 'eur': r'\b(?:eur|euros?)\b'},
+        'france': euro_pattern,
+        'italy': euro_pattern,
         'usa': {'$': r'\$', 'usd': r'\b(?:usd|dollars?)\b'}
     }
     return patterns.get(country.lower(), {})
 
 def extract_time_unit(text: str) -> str:
+    # This should change depending on language used 
     """Extract payment time unit from text."""
     if re.search(r'\b(?:per\s+hour|hourly|/hour|/hr|/h)\b', text, re.I):
         return 'per hour'
@@ -53,18 +64,44 @@ def expand_context_for_numbers(text, start, end):
         end += 1
     return start, end
 
-def extract_numbers(text):
-    """Extract valid numeric values, excluding 401k and numbers starting with 0."""
-    pattern = r'\b\d+(?:,\d{3})*(?:\.\d+)?(?:k)?\b'
-    return pd.Series(re.findall(pattern, text)).dropna()[
-        lambda x: ~x.str.startswith('0') & ~x.str.contains('401')
-    ].map(
-        lambda x: float(x[:-1].replace(',', '')) * 1000 if x.endswith('k') 
-        else float(x.replace(',', ''))
-    ).tolist()
 
+def extract_numbers(text, country):
+    """
+    Extract valid numeric values depending on country format.
+    
+    Args:
+    - text (str): The input text containing numbers.
+    - country (str): The country format ('usa' or 'sweden').
+
+    Returns:
+    - List[float]: A list of extracted numbers in float format.
+    """
+    if country == 'usa':   
+        # US format: 300, 30,000, 30000.00, or 30k
+        pattern = r'\b\d+(?:,\d{3})*(?:\.\d+)?(?:k)?\b'
+        return (
+            pd.Series(re.findall(pattern, text))
+            .dropna()
+            .loc[lambda x: ~x.str.startswith('0') & ~x.str.contains('401')]
+            .map(lambda x: float(x[:-1].replace(',', '')) * 1000 if x.endswith('k') 
+                 else float(x.replace(',', '')))
+            .tolist()
+        )
+    elif country == 'sweden': 
+        # Swedish format: 300, 30 000, 30 000,00
+        pattern = r'\b\d+(?:\s?\d{3})*(?:,\d+)?\b'
+        return (
+            pd.Series(re.findall(pattern, text))
+            .dropna()
+            .map(lambda x: float(x.replace(' ', '').replace(',', '.')))
+            .tolist()
+        )
+    else:
+        raise ValueError("Unsupported country format.")
+       
 def detect_salary_magnitude_mismatch(df: pd.DataFrame) -> pd.DataFrame:
     """Detect rows with salary magnitude mismatch."""
+    language = 'english'
     mask = pd.notna(df['min_salary']) & pd.notna(df['max_salary'])
     magnitude_diff = (df[mask]['max_salary'].astype(int).astype(str).str.len() - 
                      df[mask]['min_salary'].astype(int).astype(str).str.len()).abs()
@@ -88,9 +125,9 @@ def extract_salary_info(text: str, currencies: dict, country: str) -> pd.Series:
                 start, end = expand_context_for_numbers(text, start, end)
                 context = text[start:end]
                 
-                if numbers := [n for n in extract_numbers(context) 
+                if numbers := [n for n in extract_numbers(context, country) 
                              if n != 0 and not any(re.search(pat.replace(r'\d+', r'\d*\.?\d*'), context) 
-                                                 for pat in excluded_patterns.get(country.lower(), []))]: # Get specific excluded patterns for country 
+                                                 for pat in EXCLUDED_PATTERNS.get(country.lower(), []))]: # Get specific excluded patterns for country 
                     return pd.Series({
                         'min_salary': min(numbers),
                         'max_salary': max(numbers),
@@ -108,12 +145,19 @@ def process_job_descriptions(df: pd.DataFrame,
                            country: str, 
                            text_column: str = 'normalized_text') -> pd.DataFrame:
     """Extract salary information from job descriptions."""
+    #salary_terms = salary_terms['usa']#'salary|compensation|pay|wage'
+    # Access salary terms using .get() with a default value
+    terms = SALARY_TERMS.get(country.lower(), [])
+    print(terms)
+    if not terms:
+        raise ValueError(f"Salary terms not found for country: {country}")
     # Preprocess text once
     lowered_text = df[text_column].str.lower()
     lowered_country = df['country'].str.lower()
     
     mask = lowered_country.eq(country.lower()) & \
-           lowered_text.str.contains('salary|compensation|pay|wage', na=False)
+    lowered_text.str.contains(terms[0], na=False)
+
     df_out = df[mask].copy()
     
     if df_out.empty:
