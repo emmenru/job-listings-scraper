@@ -3,7 +3,7 @@ from typing import List, Optional
 import pandas as pd
 import numpy as np
 
-DEBUG = False
+DEBUG = True
 
 def get_currency_patterns(country: str) -> dict:
     """
@@ -46,7 +46,8 @@ def extract_numbers(text: str) -> List[float]:
     """
     pattern = r'\b\d+(?:,\d+)?(?:\.\d+)?\b(?![a-zA-Z])'  # Matches numbers like 144,400.00 
     numbers = re.findall(pattern, text)  # Applies the regexp and extracts all matching numbers
-    return numbers
+    clean_numbers = pd.to_numeric(pd.Series(numbers).str.replace(',', ''))
+    return clean_numbers
 
 # Function to expand context if it starts or ends with a number (including decimals)
 def expand_context_for_numbers(text, start, end):
