@@ -36,7 +36,7 @@ def extract_time_unit(text: str) -> str:
     return 'per year'
     
 def extract_numbers(text: str) -> List[float]:
-    pattern = r'\b\d+(?:,\d+)?(?:\.\d+)?(?:k)?\b'
+    pattern = r'\b[1-9]\d*(?:,\d+)?(?:\.\d+)?(?:k)?\b'
     numbers = re.findall(pattern, text)
     
     cleaned = []
