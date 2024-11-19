@@ -9,6 +9,9 @@ from nltk.corpus import stopwords
 from nltk import download
 from collections import Counter
 
+import utils.dictionaries as dicts
+
+
 # Download stopwords once 
 downloaded_stopwords = {}
 def download_stopwords(language):
@@ -51,6 +54,11 @@ def normalize_text(text, language_code, language_map):
   normalized_text = ' '.join(words)
   return normalized_text
 
+def normalize_group(group):
+    print(f'Normalizing text for language group: {group.name}')
+    group['normalized_text'] = group['job_description'].apply(lambda x: normalize_text(x, group.name, dicts.language_map))
+    return group
+    
 ########## Old code below
 
 def tokenize_and_filter(text, stop_words):

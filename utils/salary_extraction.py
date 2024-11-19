@@ -2,16 +2,22 @@ import re
 import pandas as pd
 import numpy as np
 
-EXCLUDED_PATTERNS = [
-    r'\d+\.?\d*\s*billion',
-    r'id \d+',
-    r'us-\d+',
-    r'\d+ pay detail',
-    r'child low \d+', 
-    r'retirement plan like \d+ dollar-for-dollar', 
-    r'\d+ per-capita healthcare',
-    r' leave \d+'
-]
+excluded_patterns = {
+   'usa': [
+       r'id \d+',
+       r'us-\d+', 
+       r'\d+\.?\d*\s*billion',
+       r'\d+ pay detail',
+       r'child low \d+',
+       r'retirement plan like \d+ dollar-for-dollar',
+       r'\d+ per-capita healthcare',
+       r' leave \d+'
+   ],
+   'sweden': [
+       r'id \d+',
+       # Add more here
+   ]
+}
 
 def get_currency_patterns(country: str) -> dict:
     """
@@ -65,7 +71,7 @@ def detect_salary_magnitude_mismatch(df: pd.DataFrame) -> pd.DataFrame:
     
     return df[mask & (magnitude_diff >= 2)][['min_salary', 'max_salary', 'context_string']]
     
-def extract_salary_info(text: str, currencies: dict) -> pd.Series:
+def extract_salary_info(text: str, currencies: dict, country: str) -> pd.Series:
     """Extract salary information from text."""
     default_result = pd.Series({k: None for k in ['min_salary', 'max_salary', 'currency', 
                               'time_period', 'context_string']} | {'salary_extraction_success': False})
@@ -84,7 +90,7 @@ def extract_salary_info(text: str, currencies: dict) -> pd.Series:
                 
                 if numbers := [n for n in extract_numbers(context) 
                              if n != 0 and not any(re.search(pat.replace(r'\d+', r'\d*\.?\d*'), context) 
-                                                 for pat in EXCLUDED_PATTERNS)]:
+                                                 for pat in excluded_patterns.get(country.lower(), []))]: # Get specific excluded patterns for country 
                     return pd.Series({
                         'min_salary': min(numbers),
                         'max_salary': max(numbers),
@@ -117,6 +123,6 @@ def process_job_descriptions(df: pd.DataFrame,
     df_out['salary_extraction_success'] = False
     
     currencies = get_currency_patterns(country)
-    df_out.update(lowered_text[mask].apply(lambda x: extract_salary_info(x, currencies)))
+    df_out.update(lowered_text[mask].apply(lambda x: extract_salary_info(x, currencies, country)))
     
     return df_out
