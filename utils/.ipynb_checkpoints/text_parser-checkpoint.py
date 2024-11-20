@@ -11,7 +11,6 @@ from collections import Counter
 
 import utils.dictionaries as dicts
 
-
 # Download stopwords once 
 downloaded_stopwords = {}
 def download_stopwords(language):
