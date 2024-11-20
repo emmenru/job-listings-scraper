@@ -1,4 +1,5 @@
 import re
+import numpy as np
 import pandas as pd
 import string
 from langdetect import detect, LangDetectException
@@ -16,6 +17,77 @@ downloaded_stopwords = {}
 def download_stopwords(language):
   if language not in downloaded_stopwords:
     downloaded_stopwords[language] = set(stopwords.words(language))
+
+def get_time_keywords(language):
+    """Get time unit keywords for different languages"""
+    keywords = {
+        'english': {
+            'year': 'year|annual',
+            'month': 'month',
+            'hour': 'hour',
+            'week': 'week'
+        },
+        'french': {
+            'year': 'an|annuel|année',
+            'month': 'mois|mensuel',
+            'hour': 'heure|horaire',
+            'week': 'semaine|hebdomadaire'
+        },
+        'italian': {
+            'year': 'anno|annuale',
+            'month': 'mese|mensile',
+            'hour': 'ora|orario',
+            'week': 'settimana|settimanale'
+        },
+        'swedish': {
+            'year': 'år|årlig',
+            'month': 'månad|mån',
+            'hour': 'timme|tim|/h',
+            'week': 'vecka'
+        }
+    }
+    return keywords.get(language.lower(), keywords['english'])  # default to English if language not found
+
+def parse_salary_column(df, column_name='salary', language='english'):
+    """
+    Parse salary ranges from DataFrame column into structured salary information.
+    Handles multiple languages for time units.
+    """
+    df = df.copy()
+    
+    # Initialize new columns with appropriate types and np.nan
+    df['min_salary'] = np.nan
+    df['max_salary'] = np.nan
+    df['currency'] = None
+    df['time_unit'] = None
+    
+    # Only process non-NaN values
+    mask = df[column_name].notna()
+    if not mask.any():
+        return df
+        
+    s = df.loc[mask, column_name].str.lower()
+    
+    # Extract numbers
+    # Put number pattern depending on country here 
+    numbers = s.str.findall(r'[\d.,]+').apply(lambda x: x[:2] if len(x) >= 2 else [np.nan, np.nan])
+    df.loc[mask, 'min_salary'] = pd.to_numeric(numbers.str[0].str.replace(',', ''), errors='coerce')
+    df.loc[mask, 'max_salary'] = pd.to_numeric(numbers.str[1].str.replace(',', ''), errors='coerce')
+    
+    # Currency
+    df.loc[mask, 'currency'] = np.where(s.str.contains('$|dollar'), 'dollar',
+                                np.where(s.str.contains('€|euro'), 'euro',
+                                np.where(s.str.contains('kr|kronor|sek'), 'sek', None)))
+    
+    # Get time unit patterns for specified language
+    time_patterns = get_time_keywords(language)
+    
+    # Time unit using language-specific patterns
+    conditions = [s.str.contains(pattern) for pattern in time_patterns.values()]
+    choices = list(time_patterns.keys())
+    df.loc[mask, 'time_unit'] = np.select(conditions, choices, default=None)
+    
+    return df
 
 # Function to detect language 
 def detect_language(text):
