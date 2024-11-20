@@ -11,14 +11,14 @@ SALARY_TERMS = {
     'usa': [ENGLISH_TERMS],
     'france': [f"salaire|rémunération|revenu|taux horaire|conditions salariales"],
     'sweden': [f"lön|betalning|{ENGLISH_TERMS}"],
-    'italy': [ENGLISH_TERMS]
+    'italy': [f"stipendio|retribuzione|salario|compenso|paga|ral|rimborso|{ENGLISH_TERMS}"]
 }
 
 NUMBER_PATTERNS = {
     'usa': r'\b\d+(?:,\d{3})*(?:\.\d+)?(?:k)?\b',
     'sweden': r'\b\d+(?:\s?\d{3})*(?:,\d+)?\b',
-    'france': r'\b\d+(?:\s?\d{3})*(?:[,.]\d+)?\b',
-    'italy': r'\b\d+(?:\.?\d{3})*(?:,\d+)?\b'
+    'france': r'\b\d+(?:\s?\d{3})*(?:[,.]\d+)?\b',    
+    'italy': r'\b\d+(?:[,.]\d+)*(?:k)?\b|\b\d+(?:[-–]\d+)?k?\b'
 }
 
 TIME_PATTERNS = {
@@ -40,7 +40,7 @@ TIME_PATTERNS = {
         'per day': r'\b(?:al\s+giorno|giornaliero|/giorno)\b',
         'per week': r'\b(?:alla\s+settimana|settimanale|/settimana)\b',
         'per month': r'\b(?:al\s+mese|mensile|/mese)\b',
-        'per year': r'\b(?:all\'anno|annuale|/anno)\b'
+        'per year': r'\b(?:all\'anno|annuale|/anno|ral)\b'
     }
 }
 
@@ -48,10 +48,9 @@ SALARY_LIMITS = {
     'usa': {'hourly': (1, 1000), 'other': (15000, 1000000)},
     'france': {'hourly': (36, 500), 'weekly': (100, 7000), 'other': (500, 100000)},
     'sweden': {'hourly': (250, 10000), 'other': (6000, 1000000)},
-    'italy': {'hourly': (1, 500), 'other': (200, 100000)}
+    'italy': {'hourly': (1, 500), 'other': (200, 200000)}
 }
 
-# Helper functions
 def get_currency_patterns(country: str) -> dict:
     """Get currency patterns for different countries."""
     euro_pattern = {'€': r'€', 'eur': r'\b(?:eur|euros?)\b'}
@@ -68,6 +67,15 @@ def parse_french_number(x: str) -> float:
     if ',' in x and len(x.split(',')[1]) == 3:
         return float(x.replace(',', ''))
     return float(x.replace(' ', '').replace('\u00a0', '').replace(',', '.'))
+
+def parse_italian_number(x: str) -> float:
+    """Parse Italian number formats including k suffix and ranges."""
+    x = x.lower().strip()
+    multiplier = 1000 if 'k' in x else 1
+    x = x.replace('k', '')
+    if '-' in x or '–' in x:
+        x = re.split(r'[-–]', x)[0]
+    return float(x.replace('.', '').replace(',', '.')) * multiplier
 
 def is_likely_year(number: float, context: str) -> bool:
     """Check if a number is likely to be a year."""
@@ -118,7 +126,7 @@ def extract_numbers(text: str, country: str) -> list:
         return [n * 1000 if re.search(rf'{int(n)}\s*k', text, re.I) else n for n in parsed_numbers]
         
     else:  # italy
-        return numbers.apply(lambda x: float(x.replace('.', '').replace(',', '.'))).tolist()
+        return numbers.apply(parse_italian_number).tolist()
 
 def expand_context_for_numbers(text: str, start: int, end: int) -> tuple[int, int]:
     """Expand context to include complete numbers at boundaries."""
@@ -128,7 +136,6 @@ def expand_context_for_numbers(text: str, start: int, end: int) -> tuple[int, in
         end += 1
     return start, end
 
-# Main functions
 def extract_salary_info(text: str, currencies: dict, country: str, language: str = 'english') -> pd.Series:
     """Extract salary information from text."""
     default_result = pd.Series({
@@ -186,7 +193,6 @@ def process_job_descriptions(df: pd.DataFrame, country: str,
     if country.lower() not in SALARY_TERMS:
         raise ValueError(f"Salary terms not found for country: {country}")
     
-    # Filter relevant rows
     mask = (df['country'].str.lower() == country.lower()) & \
            df[text_column].str.lower().str.contains(SALARY_TERMS[country.lower()][0], na=False)
     df_out = df[mask].copy()
@@ -194,11 +200,9 @@ def process_job_descriptions(df: pd.DataFrame, country: str,
     if df_out.empty:
         return df_out
     
-    # Initialize columns
     df_out[['min_salary', 'max_salary', 'currency', 'time_period', 'context_string']] = None
     df_out['salary_extraction_success'] = False
     
-    # Extract salary information
     currencies = get_currency_patterns(country)
     df_out.update(df_out.apply(
         lambda row: extract_salary_info(row[text_column], currencies, country, row['language']),
