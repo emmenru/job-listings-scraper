@@ -18,103 +18,6 @@ def download_stopwords(language):
   if language not in downloaded_stopwords:
     downloaded_stopwords[language] = set(stopwords.words(language))
 
-def get_time_keywords(language):
-    """Get time unit keywords for different languages"""
-    keywords = {
-        'english': {
-            'year': 'year|annual',
-            'month': 'month',
-            'hour': 'hour',
-            'week': 'week'
-        },
-        'french': {
-            'year': 'an|annuel|année',
-            'month': 'mois|mensuel',
-            'hour': 'heure|horaire',
-            'week': 'semaine|hebdomadaire'
-        },
-        'italian': {
-            'year': 'anno|annuale',
-            'month': 'mese|mensile',
-            'hour': 'ora|orario',
-            'week': 'settimana|settimanale'
-        },
-        'swedish': {
-            'year': 'år|årlig',
-            'month': 'månad|mån',
-            'hour': 'timme|tim|/h',
-            'week': 'vecka'
-        }
-    }
-    return keywords.get(language.lower(), keywords['english'])  # default to English if language not found
-
-def parse_salary_column(df, column_name='salary', languages=['english'], country='USA'):
-    df = df.copy()
-    df['min_salary'] = np.nan
-    df['max_salary'] = np.nan
-    df['currency'] = None
-    df['time_unit'] = None
-    
-    # Create combined mask
-    valid_mask = df[column_name].notna() & df[column_name].str.contains(r'\d', na=False)
-    if not valid_mask.any():
-        return df
-        
-    s = df.loc[valid_mask, column_name].str.lower()
-    
-    if country in ['Sweden', 'France']:
-        print('Sweden or Italy')
-        number_pattern = r'[\d]+\s*[\d]*'
-        numbers = s.str.findall(number_pattern).apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]]) 
-        print("Numbers found: ")
-        print(numbers)
-        #print("Numbers type:", type(numbers))
-        #print("After regex reformatting (remove spaces): ")
-        min_vals = numbers.str[0].str.replace(r'\s+', '', regex=True)
-        max_vals = numbers.str[1].str.replace(r'\s+', '', regex=True)
-        df.loc[valid_mask, 'min_salary'] = pd.to_numeric(min_vals, errors='coerce')
-        df.loc[valid_mask, 'max_salary'] = pd.to_numeric(max_vals, errors='coerce')
-        print("--------------------------- ")
-        print("After assignment:\n")
-        print(df.loc[valid_mask, ['min_salary', 'max_salary']])
-    elif country == 'Italy':
-        print('Italy')
-        # Print original string
-        print("Original:")
-        print(s)
-        # Remove dots
-        s = s.apply(lambda x: re.sub(r'(\d+)\.(\d{3})', r'\1\2', str(x)))
-        print("\nAfter dot removal:")
-        print(s)
-        # Get numbers
-        numbers = s.str.findall(r'\d+').apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]])
-        print("\nNumbers found:")
-        print(numbers)
-        df.loc[valid_mask, 'min_salary'] = pd.to_numeric(numbers.str[0], errors='coerce')
-        df.loc[valid_mask, 'max_salary'] = pd.to_numeric(numbers.str[1], errors='coerce')
-    else:
-        number_pattern = number_pattern = r'\$?(\d+(?:,\d{3})*(?:\.\d{2})?|\d+)'
-        numbers = s.str.findall(number_pattern).apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]]) 
-        #print(numbers)
-        df.loc[valid_mask, 'min_salary'] = pd.to_numeric(numbers.str[0].str.replace(',', ''), errors='coerce')
-        df.loc[valid_mask, 'max_salary'] = pd.to_numeric(numbers.str[1].str.replace(',', ''), errors='coerce')  
-
-    df.loc[valid_mask, 'currency'] = np.where(s.str.contains('$|dollar'), 'dollar',
-                                    np.where(s.str.contains('€|euro'), 'euro',
-                                    np.where(s.str.contains('kr|kronor|sek'), 'sek', None)))
-    
-    time_patterns = get_time_keywords(languages[0])
-    if len(languages)>1:
-        time_patterns_2 = get_time_keywords(languages[1])
-        for key in time_patterns:
-            time_patterns[key] = f"{time_patterns[key]}|{time_patterns_2[key]}"
-    
-    conditions = [s.str.contains(pattern) for pattern in time_patterns.values()]
-    choices = list(time_patterns.keys())
-    df.loc[valid_mask, 'time_unit'] = np.select(conditions, choices, default=None)
-    
-    return df
-
 # Function to detect language 
 def detect_language(text):
   try:
@@ -155,7 +58,7 @@ def normalize_group(group):
     print(f'Normalizing text for language group: {group.name}')
     group['normalized_text'] = group['job_description'].apply(lambda x: normalize_text(x, group.name, dicts.language_map))
     return group
-    
+
 ########## Old code below
 
 def tokenize_and_filter(text, stop_words):
