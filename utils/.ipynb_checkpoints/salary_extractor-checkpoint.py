@@ -41,60 +41,70 @@ def get_time_keywords(language):
     return keywords.get(language.lower(), keywords['english'])  # default to English if language not found
 
 def parse_salary_column(df, column_name='salary', languages=['english'], country='USA'):
+    """
+    Parse salary information from text data, extracting minimum and maximum salaries,
+    currency, and time units. Handles different number formats based on country.
+    """
     df = df.copy()
-    df['min_salary'] = np.nan
-    df['max_salary'] = np.nan
-    df['currency'] = None
-    df['time_unit'] = None
+    # Initialize with pd.NA and specify dtypes
+    df['min_salary'] = pd.Series(dtype='Float64')  # capital F allows NA
+    df['max_salary'] = pd.Series(dtype='Float64')
+    df['currency'] = pd.Series(dtype='object')
+    df['time_unit'] = pd.Series(dtype='object')
     
-    # Create combined mask
+    #df[['min_salary', 'max_salary']] = np.nan
+    #df[['currency', 'time_unit']] = None
+    
+    # Mask that allows to keep rows with non-null values containing numbers
     valid_mask = df[column_name].notna() & df[column_name].str.contains(r'\d', na=False)
     if not valid_mask.any():
         return df
         
     s = df.loc[valid_mask, column_name].str.lower()
-    
+
+    # Different patterns based on country formats
     if country in ['Sweden', 'France']:
         number_pattern = r'[\d]+\s*[\d]*'
-        numbers = s.str.findall(number_pattern).apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]]) 
-        print("Numbers found: ")
-        print(numbers)
+        numbers = s.str.findall(number_pattern).apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]]) # Numbers found 
         min_vals = numbers.str[0].str.replace(r'\s+', '', regex=True)
         max_vals = numbers.str[1].str.replace(r'\s+', '', regex=True)
         df.loc[valid_mask, 'min_salary'] = pd.to_numeric(min_vals, errors='coerce')
         df.loc[valid_mask, 'max_salary'] = pd.to_numeric(max_vals, errors='coerce')
-        print("--------------------------- ")
-        print("After assignment:\n")
-        print(df.loc[valid_mask, ['min_salary', 'max_salary']])
+        print(df.loc[valid_mask, ['min_salary', 'max_salary']]) # After assigning values 
     elif country == 'Italy':
         s = s.apply(lambda x: re.sub(r'(\d+)\.(\d{3})', r'\1\2', str(x)))  # Remove dots first
         numbers = s.str.findall(r'\d+').apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]])
-        print("\nNumbers found:")
-        print(numbers)
         df.loc[valid_mask, 'min_salary'] = pd.to_numeric(numbers.str[0], errors='coerce')
         df.loc[valid_mask, 'max_salary'] = pd.to_numeric(numbers.str[1], errors='coerce')
-    else:
+        print(df.loc[valid_mask, ['min_salary', 'max_salary']])
+    else: # USA 
         number_pattern = number_pattern = r'\$?(\d+(?:,\d{3})*(?:\.\d{2})?|\d+)'
         numbers = s.str.findall(number_pattern).apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]]) 
-        print("\nNumbers found:")
-        print(numbers)
         df.loc[valid_mask, 'min_salary'] = pd.to_numeric(numbers.str[0].str.replace(',', ''), errors='coerce')
         df.loc[valid_mask, 'max_salary'] = pd.to_numeric(numbers.str[1].str.replace(',', ''), errors='coerce')  
-
+        print(df.loc[valid_mask, ['min_salary', 'max_salary']])
+        
     df.loc[valid_mask, 'currency'] = np.where(s.str.contains('$|dollar'), 'dollar',
                                     np.where(s.str.contains('€|euro'), 'euro',
                                     np.where(s.str.contains('kr|kronor|sek'), 'sek', None)))
-    
+
+    # Combine time-related keywords from multiple languages
     time_patterns = get_time_keywords(languages[0])
     if len(languages)>1:
         time_patterns_2 = get_time_keywords(languages[1])
         for key in time_patterns:
-            time_patterns[key] = f"{time_patterns[key]}|{time_patterns_2[key]}"
-    
+            time_patterns[key] = f'{time_patterns[key]}|{time_patterns_2[key]}'
+
+    # Determine time unit for each salary 
     conditions = [s.str.contains(pattern) for pattern in time_patterns.values()]
     choices = list(time_patterns.keys())
     df.loc[valid_mask, 'time_unit'] = np.select(conditions, choices, default=None)
-    
+
+    # Before returning, ensure all null values are pd.NA
+    columns_to_check = ['min_salary', 'max_salary', 'currency', 'time_unit']
+    for col in columns_to_check:
+        df[col] = df[col].replace([np.nan, None], pd.NA)
+   
     return df
     
 
