@@ -3,35 +3,32 @@ import requests
 import numpy as np
 import pandas as pd
 
-"""
-def convert_salary(value):
-    # Converts salary strings with thousand separators or decimal points into a float.
-    return float(value.replace('\xa0', '').replace(' ', '').replace(',', '').replace('.', '').replace('..', '.'))
-"""
-
-
 def get_time_keywords(language):
     """Get time unit keywords for different languages"""
     keywords = {
         'english': {
+            'day': 'day',
             'year': 'year|annual',
             'month': 'month',
             'hour': 'hour',
             'week': 'week'
         },
         'french': {
+            'day': 'par jour',
             'year': r'par\s*an|annuel|année',  
             'month': r'par\s*mois|mensuel',  
             'hour': r'par\s*heure|horaire',
             'week': r'par\s*semaine|hebdomadaire'
         },
         'italian': {
+            'day': 'al giorno',
             'year': 'anno|annuale',
             'month': 'mese|mensile',
             'hour': 'ora|orario',
             'week': 'settimana|settimanale'
         },
         'swedish': {
+            'day': 'per dag',
             'year': 'år|årlig',
             'month': 'månad|mån',
             'hour': 'timme|tim|/h',
@@ -41,12 +38,16 @@ def get_time_keywords(language):
     return keywords.get(language.lower(), keywords['english'])  # default to English if language not found
 
 
-def convert_to_eur(row, exchange_rates):
-    rate = exchange_rates.get(row['currency'], 1)  # Default to 1 if currency not found
-    row['min_salary_month_EUR'] = row['min_salary_monthly'] * rate if pd.notna(row['min_salary_monthly']) else pd.NA
-    row['max_salary_month_EUR'] = row['max_salary_monthly'] * rate if pd.notna(row['max_salary_monthly']) else pd.NA
-    return row
-
+def convert_to_eur(df, exchange_rates):
+    # Create a series of rates matching the df's currency column
+    rates = df['currency'].map(exchange_rates).fillna(1)
+    
+    # Multiply only where salaries are not NA
+    df['min_salary_month_EUR'] = df['min_salary_monthly'].multiply(rates, fill_value=pd.NA)
+    df['max_salary_month_EUR'] = df['max_salary_monthly'].multiply(rates, fill_value=pd.NA)
+    
+    return df
+    
 def convert_salary_to_monthly(df, salary_column, time_unit_column):
     """
     Vectorized function to convert salary values to monthly equivalents based on time periods.
@@ -60,11 +61,11 @@ def convert_salary_to_monthly(df, salary_column, time_unit_column):
     """
     # Dictionary to map time periods to their monthly conversion factor
     time_period_map = {
-        'hour': 160, 'ora': 160, 'heure': 160,
-        'year': 1/12, 'anno': 1/12, 'par an': 1/12,
-        'week': 4, 'settimana': 4, 'semaine': 4,
-        'day': 20, 'giorno': 20, 'jour': 20,
-        'month': 1, 'mese': 1, 'mois': 1, 'månad': 1
+        'hour': 160, 
+        'year': 1/12, 
+        'week': 4,
+        'day': 20, 
+        'month': 1,
     }
     
     # Create a categorical type with the mapping dictionary keys
@@ -81,8 +82,11 @@ def convert_salary_to_monthly(df, salary_column, time_unit_column):
     conversion_factors = pd.Series(time_period_map)
     
     # Map the conversion factors to the time periods
-    factors = pd.Series(time_periods).map(conversion_factors)
-    
+    #factors = pd.Series(time_periods).map(conversion_factors)
+    # Convert time units to lowercase and map directly to conversion factors
+    # This will preserve NA values
+    factors = df[time_unit_column].str.lower().map(time_period_map)
+
     # Multiply salary by conversion factors
     return df[salary_column] * factors
 
@@ -142,6 +146,7 @@ def parse_salary_column(df, column_name='salary', languages=['english'], country
     df['time_unit'] = pd.Series(dtype='string')
 
     # Exclude invalid rows
+    # this duration pattern should perhaps just remove the cases when there is only '6 month internship' for France?
     duration_pattern = r'durée jusqu\'à \d+\s*mois'
     valid_mask = (df[column_name].notna() & 
                   df[column_name].str.contains(r'\d', na=False) & 
@@ -181,8 +186,15 @@ def parse_salary_column(df, column_name='salary', languages=['english'], country
     for col in ['min_salary', 'max_salary', 'currency', 'time_unit']:
         df[col] = df[col].replace([np.nan, None], pd.NA)
 
+    # After parsing and filling in data, set the categories for 'currency' and 'time_unit'
+    #currency_categories = ['dollar', 'euro', 'sek']
+    #time_unit_categories = ['year', 'month', 'week', 'hour', 'day']
+    
+    # Convert to categorical columns with predefined categories
+    #df['currency'] = df['currency'].astype(pd.CategoricalDtype(categories=currency_categories, ordered=False))
+    #df['time_unit'] = df['time_unit'].astype(pd.CategoricalDtype(categories=time_unit_categories, ordered=False))
+    
     return df
-
 
 def get_exchange_rate(base_currency, target_currency):
     """
