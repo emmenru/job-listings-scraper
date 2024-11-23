@@ -1,0 +1,1 @@
+2024-11-18 16:37:59,042 - ERROR - Error processing job descriptions: Array conditional must be same shape as self
