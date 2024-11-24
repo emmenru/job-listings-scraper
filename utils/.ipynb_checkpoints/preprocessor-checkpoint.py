@@ -93,18 +93,3 @@ def remove_duplicates_jobdesc(data):
     print(f'Size before: {data.size}. Size after removing duplicates: {output.size} \n')
     return output
 
-def desc_categorical(data):
-    """
-    Function for describing categorical data. 
-    Prints value counts for categorical columns in the given DataFrame.
-    Identifies string and object columns, excluding 'job_description' and 'job_link' columns. 
-    """
-    # Exclude these 
-    string_columns = data.select_dtypes(include='string').drop(columns=['job_description', 'normalized_text'])# Skip job description! 
-    object_columns = data.select_dtypes(include='object').drop(columns='job_link')
-
-    # Loop through the columns and print value counts
-    for col in string_columns.columns:
-        print(f"Value counts for column: {col}\n{string_columns[col].value_counts()}\n")
-    for col in object_columns.columns:
-        print(f"Value counts for column: {col}\n{object_columns[col].value_counts()}\n")

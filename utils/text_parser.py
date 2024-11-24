@@ -18,6 +18,15 @@ def download_stopwords(language):
   if language not in downloaded_stopwords:
     downloaded_stopwords[language] = set(stopwords.words(language))
 
+def tokenize_and_filter(text, stop_words):
+    # Tokenization: split text into words and remove stopwords
+    tokens = text.split()
+    return [word for word in tokens if word not in stop_words]
+
+def preprocess_text(text):
+    # Remove punctuation and make lowercase
+    return re.sub(r'[^\w\s]', '', text.lower())
+
 # Function to detect language 
 def detect_language(text):
   try:
@@ -56,111 +65,108 @@ def normalize_text(text, language_code, language_map):
 
 def normalize_group(group):
     print(f'Normalizing text for language group: {group.name}')
-    group['normalized_text'] = group['job_description'].apply(lambda x: normalize_text(x, group.name, dicts.language_map))
+    group['job_description_norm'] = group['job_description'].apply(lambda x: normalize_text(x, group.name, dicts.language_map))
     return group
-
-########## Old code below
-
-def tokenize_and_filter(text, stop_words):
-    # Tokenization: split text into words and remove stopwords
-    tokens = text.split()
-    return [word for word in tokens if word not in stop_words]
- 
-def preprocess_text(text):
-    # Remove punctuation and make lowercase
-    return re.sub(r'[^\w\s]', '', text.lower())
 
 def extract_keywords(df, country, language):
     """
     Extracts and returns the most common keywords from job descriptions in a specified country and language.
-
     Args:
         df: The DataFrame containing job descriptions and other relevant columns.
         country: The country to filter the data by.
         language: The language of the job descriptions.
-
     Returns:
         A tuple containing:
             1. A list of the top 10 most common keywords.
             2. A list of all extracted tokens.
     """
+    # Use the normalized job description text
+    job_description_column = 'job_description_norm'
     
-    # Always include English stopwords
-    stop_words = set(stopwords.words('english'))
-
-    # Add additional stopwords based on the specified language
-    if language == 'french':
-        stop_words.update(stopwords.words('french'))
-    elif language == 'italian':
-        stop_words.update(stopwords.words('italian'))
-    elif language == 'swedish':
-        stop_words.update(stopwords.words('swedish'))
-    elif language == 'english':
-        # English stopwords are already included at the top
-        pass
-    else:
-        raise ValueError("Unsupported language.")
-
-    # Filter the DataFrame for the specified country
-    df_country = df[df['country'] == country].copy()  # Create a copy to avoid SettingWithCopyWarning
-
-    # Use .loc to assign new columns
-    df_country.loc[:, 'cleaned_description'] = df_country['job_description'].apply(preprocess_text)
-    #df_country.loc[:, 'tokens'] = df_country['cleaned_description'].apply(tokenize_and_filter)
-    df_country.loc[:, 'tokens'] = df_country['cleaned_description'].apply(lambda text: tokenize_and_filter(text, stop_words))
-
-    # Flatten the list of tokens and count frequencies
-    all_tokens = [token for sublist in df_country['tokens'] for token in sublist]
+    # Create language-specific stopwords mapping
+    language_stopwords = {
+        'french': lambda: stopwords.words('english') + stopwords.words('french'),
+        'italian': lambda: stopwords.words('english') + stopwords.words('italian'),
+        'swedish': lambda: stopwords.words('english') + stopwords.words('swedish'),
+        'english': lambda: stopwords.words('english')
+    }
+    
+    # Get stopwords or raise error for unsupported language
+    try:
+        stop_words = set(language_stopwords[language]())
+    except KeyError:
+        raise ValueError(f"Unsupported language: {language}")
+    
+    # Filter and process text
+    df_country = (df[df['country'] == country]
+                 .assign(
+                     cleaned_description=lambda x: x[job_description_column].apply(preprocess_text),
+                     tokens=lambda x: x['cleaned_description'].apply(
+                         lambda text: tokenize_and_filter(text, stop_words)
+                     )
+                 ))
+    
+    # Flatten tokens 
+    all_tokens = df_country['tokens'].explode().tolist()
+    
+    # Get word counts and top keywords
     word_counts = Counter(all_tokens)
-
-    # Get the top 10 keywords
-    common_keywords = word_counts.most_common(10)  
-    return (common_keywords, all_tokens)
-
-def count_keywords(df, country, software_keywords):
+    common_keywords = word_counts.most_common(10)
+    
+    return common_keywords, all_tokens
+    
+def count_keywords(df, country, software_keywords, job_description_column):
     """
-    Counts the occurrences of keywords in job descriptions for a specific country and categorizes them.
-
+    Counts the presence (binary) of keywords in job descriptions for a specific country and categorizes them.
     Args:
         df: The DataFrame containing job descriptions and search keywords.
         country: The country to filter the data by.
         software_keywords: A dictionary mapping categories to lists of keywords.
-
     Returns:
         A DataFrame with columns for category, keyword, count, associated search keyword, and country.
     """
-    # Prepare the DataFrame list to store individual entries
-    data = []
-
-    # Filter DataFrame by country
-    filtered_df = df[df['country'] == country]
+    # Use the normalized job description text
+    #job_description_column = 'job_description_norm'
     
-    # Flatten the keywords into a single list with their categories
-    category_keywords = [(category, keyword) for category, keywords in software_keywords.items() for keyword in keywords]
+    # Filter by country and convert to lowercase once
+    filtered_df = df[df['country'] == country].copy()
+    filtered_df[job_description_column] = filtered_df[job_description_column].str.lower()
+    
+    # Create keyword DataFrame
+    keyword_df = pd.DataFrame([
+        (category, keyword)
+        for category, keywords in software_keywords.items()
+        for keyword in keywords
+    ], columns=['Category', 'Keyword'])
+    
+    # Create cross join between filtered_df and keyword_df
+    result = (filtered_df[[job_description_column, 'search_keyword']]
+             .assign(key=1)
+             .merge(keyword_df.assign(key=1), on='key')
+             .drop('key', axis=1))
+    
+    # Binary count (1 if keyword present, 0 if not)
+    result['Count'] = result.apply(
+        lambda row: 1 if row['Keyword'] in row[job_description_column] else 0, 
+        axis=1
+    )
+    
+    # Filter non-zero counts and add country
+    result = (result[result['Count'] > 0]
+             .assign(Country=country)
+             [['Category', 'Keyword', 'Count', 'search_keyword', 'Country']]
+             .rename(columns={'search_keyword': 'Search Keyword'}))
+    
+    # Group and sum counts with observed parameter
+    result = result.groupby(
+        ['Category', 'Keyword', 'Search Keyword', 'Country'],
+        as_index=False,
+        observed=True  
+    ).sum()
+    
+    return result
 
-    for index, row in filtered_df.iterrows():
-        job_description = row['job_description'].lower()  # Access job description
-        search_keyword = row['search_keyword']  # Access associated search keyword
-        
-        for category, keyword in category_keywords:
-            count = job_description.count(keyword)
-            if count > 0:  # Only record non-zero counts
-                data.append({
-                    'Category': category,
-                    'Keyword': keyword,
-                    'Count': count,
-                    'Search Keyword': search_keyword,
-                    'Country': country  
-                })
-
-    # Create a df from the collected data
-    result_df = pd.DataFrame(data)
-
-    # Group by relevant columns and sum the counts
-    result_df = result_df.groupby(['Category', 'Keyword', 'Search Keyword', 'Country'], as_index=False).sum()
-
-    return result_df
-
+########## Old code below
 
 def extract_stage_text(job_desc, stage_pattern, context_window=100):
     """
@@ -186,7 +192,7 @@ def extract_stage_text(job_desc, stage_pattern, context_window=100):
         context_start = context_match.end()
         text_after_context = job_desc[context_start:]
         
-        # Now, search for the stage pattern within this limited text
+        # Search for the stage pattern within this limited text
         stage_match = re.search(stage_pattern, text_after_context, re.IGNORECASE)
         
         if stage_match:
