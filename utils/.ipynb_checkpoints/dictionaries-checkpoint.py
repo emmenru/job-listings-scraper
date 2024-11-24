@@ -76,21 +76,29 @@ software_keywords = {
     ]
 }
 
+# Dictionary for context patterns used to filter out interview keywords 
+context_patterns = {
+    'english': r'recruitment process|interview process',
+    'french': r'processus de recrutement|processus d\'entretien',
+    'italian': r'processo di reclutamento|processo di colloquio',
+    'swedish': r'rekryteringsprocess|intervjuprocess'
+}
+
 # Dictionary with interview keywords 
 interview_stages = {
-    'phone_screening': r'phone screening|phone interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju',
+    'phone_screening': r'phone screening|phone interview|video interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju|intervista video|entretien vidéo|visio|entretien en visio',
     
-    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|évaluation technique|entrevue technique|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
+    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|technical evaluation|évaluation technique|entrevue technique|prova tecnica|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
 
-    'case_study': r'case study|take-home assignment|business case|étude de cas|assegnazione a casa|business case|caso studio|fallstudie|business case',
+    'case_study': r'case study|take-home assignment|business case|mock project|real-world problem|étude de cas|assignation à domicile|assegnazione a casa|business case|caso studio|fallstudie|business case',
 
-    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|SQL test|Python test|test di programmazione|intervista di programmazione|assessment tecnico|test SQL|test Python|kodningsprov|programmeringstest|teknisk bedömning',
+    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|data challenge|whiteboard interview|SQL test|Python test|test di programmazione|intervista di programmazione|assessment tecnico|test SQL|test Python|kodningsprov|programmeringstest|teknisk bedömning|sfida di codifica',
 
     'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions|entretien comportemental|entretien culturel|entrevue RH|entrevue situationnelle|domande comportamentali|colloquio comportamentale|HR-intervju|beteendefrågor',
 
-    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview|entrevue sur place|dernière ligne droite|entrevue en personne|entrevue en panel|intervista in sede|colloquio finale|colloquio in presenza|intervista di gruppo|panelintervju|slutintervju',
+    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview|group interview|entrevue sur place|dernière ligne droite|entrevue en personne|entrevue en panel|entretien collectif|intervista in sede|colloquio finale|colloquio in presenza|intervista di gruppo|panelintervju|slutintervju|intervista di gruppo',
 
-    'presentation': r'project presentation|technical presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
+    'presentation': r'project presentation|technical presentation|mock presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
 }
 
 # Dictionary to map time periods to monthly conversion factors

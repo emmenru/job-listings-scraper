@@ -87,3 +87,38 @@ def plot_wordtree(data, country):
     plt.title(f'Wordcloud of Job Descriptions - {country}')
     plt.axis('off')
     plt.show()
+
+def plot_grouped_histograms(df, group_col, value_col, bins=10, kde=True, figsize=(16, 6), title='Histogram'):
+    """
+    Plots histograms for a numerical column grouped by a categorical column.
+
+    Args:
+        df (DataFrame): The data source.
+        group_col (str): The column to group by (e.g., country).
+        value_col (str): The numerical column to plot (e.g., salary).
+        bins (int): Number of bins for the histogram.
+        kde (bool): Whether to include a Kernel Density Estimate (KDE) curve.
+        figsize (tuple): Figure size.
+        title (str): Overall title for the plot.
+    """
+    unique_groups = df[group_col].unique()
+    fig, axes = plt.subplots(1, len(unique_groups), figsize=figsize)
+
+    for i, group in enumerate(unique_groups):
+        group_data = df[df[group_col] == group]
+        sns.histplot(
+            x=value_col,
+            data=group_data,
+            bins=bins,
+            kde=kde,
+            alpha=0.5,
+            ax=axes[i]
+        )
+        axes[i].set_title(group)
+        axes[i].set_xlabel('EUR')
+        axes[i].set_ylabel('Frequency')
+
+    plt.suptitle(title)
+    plt.tight_layout()
+    plt.show()
+

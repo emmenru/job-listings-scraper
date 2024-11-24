@@ -166,89 +166,113 @@ def count_keywords(df, country, software_keywords, job_description_column):
     
     return result
 
-########## Old code below
 
-def extract_stage_text(job_desc, stage_pattern, context_window=100):
+def extract_single_stage(text, pattern, language, context_patterns):
     """
-    Extracts text related to the interview process from a job description.
-
+    Extracts text around a specific interview stage pattern from job description text.
+    
     Args:
-        job_desc: The text of the job description.
-        stage_pattern: A string or raw string pattern representing an interview stage (e.g., "phone interview").
-        context_window: The number of characters to capture around the matched stage pattern (default: 100).
-
+        text: The job description text to search in
+        pattern: Regex pattern for the interview stage
+        language: Language code (e.g., 'en', 'fr', 'it', 'sv')
+        context_patterns: Dictionary of context patterns by language
+    
     Returns:
-        A string containing the extracted text surrounding the stage pattern within the interview process context, 
-        or None if no match is found.
+        Extracted text around the pattern or None if not found
     """
-    # Define the context pattern as a constant here
-    context_pattern = r'recruitment process|interview process'
-
-    # First, find the location of the context pattern
-    context_match = re.search(context_pattern, job_desc, re.IGNORECASE)
+    context_pattern = context_patterns.get(language, context_patterns['english'])
+    context_match = re.search(context_pattern, text, re.IGNORECASE)
     
     if context_match:
-        # Narrow down the text to start after the context pattern match
-        context_start = context_match.end()
-        text_after_context = job_desc[context_start:]
-        
-        # Search for the stage pattern within this limited text
-        stage_match = re.search(stage_pattern, text_after_context, re.IGNORECASE)
+        text_after_context = text[context_match.end():]
+        stage_match = re.search(pattern, text_after_context, re.IGNORECASE)
         
         if stage_match:
-            # Calculate the adjusted start and end based on `text_after_context`
             start = max(0, stage_match.start() - 20)
-            end = min(len(text_after_context), stage_match.end() + context_window)
-            
-            # Print the extracted text
-            extracted_text = text_after_context[start:end].strip()
-            #print("----Extracted Text Around Stage Pattern----")
-            #print(extracted_text)
-            return extracted_text  # Return the extracted text
-            
-    return None  # Return None if no match is found
-    
-def extract_interview_details(df, stages):
-    """
-    Extracts detailed information about interview stages from job descriptions and creates two DataFrames.
+            end = min(len(text_after_context), stage_match.end() + 100)
+            return text_after_context[start:end].strip()
+    return None
 
+
+def extract_interview_details(df, stages, context_patterns, column, language_column='language'):
+    """
+    Extracts detailed information about interview stages from job descriptions.
+    
     Args:
-        df: The DataFrame containing job descriptions and other relevant information.
-        stages: Dictionary with fefined patterns for each interview stage.
+        df: DataFrame with job_description, job_id, job_title, and job_link columns
+        stages: Dictionary with defined patterns for each interview stage
+        context_patterns: Dictionary of context patterns by language
+        column: The column containing job description text
+        language_column: Column specifying the language of the job description
     
     Returns:
-        A tuple of two DataFrames:
-        1. Detailed text DataFrame: Contains extracted text for each interview stage, along with job ID, title, and link.
-        2. Boolean indicator DataFrame: Indicates the presence of each interview stage with True/False values.
+        Tuple of two DataFrames:
+        1. Detailed text for each interview stage
+        2. Boolean indicators for presence of each stage
     """
-    interview_info = []
-    interview_flags = []
+    base_df = df[['job_id', 'search_keyword', 'job_link', language_column]].copy()
+    
+    for stage, pattern in stages.items():
+        base_df[f'{stage}_text'] = df.apply(
+            lambda row: extract_single_stage(row[column], pattern, row[language_column], context_patterns), axis=1
+        )
+        base_df[stage] = base_df[f'{stage}_text'].notna()
+    
+    text_columns = ['job_id', 'search_keyword', 'job_link'] + [f'{s}_text' for s in stages]
+    flag_columns = ['job_id', 'search_keyword', 'job_link'] + list(stages.keys())
+    
+    return base_df[text_columns], base_df[flag_columns]
 
-    for _, row in df.iterrows():
-        job_desc = row['job_description']
+    
+'''
+def extract_single_stage(text, pattern):
+    """
+    Extracts text around a specific interview stage pattern from job description text.
+    
+    Args:
+        text: The job description text to search in
+        pattern: Regex pattern for the interview stage
+    
+    Returns:
+        Extracted text around the pattern or None if not found
+    """
+    # This should be based on language for respective country 
+    context_pattern = r'recruitment process|interview process'
+    context_match = re.search(context_pattern, text, re.IGNORECASE)
+    
+    if context_match:
+        text_after_context = text[context_match.end():]
+        stage_match = re.search(pattern, text_after_context, re.IGNORECASE)
         
-        # Store detailed text and flags for each stage in dictionaries
-        details = {
-            'job_id': row['job_id'],
-            'job_title': row['job_title'],     # Add job title
-            'job_link': row['job_link']        # Add job link or other useful identifiers
-        }
-        flags = {
-            'job_id': row['job_id'],
-            'job_title': row['job_title'],
-            'job_link': row['job_link']
-        }
-        
-        for stage, pattern in stages.items():
-            extracted_text = extract_stage_text(job_desc, pattern)
-            details[f'{stage}_text'] = extracted_text
-            flags[stage] = bool(extracted_text)
-        
-        interview_info.append(details)
-        interview_flags.append(flags)
+        if stage_match:
+            start = max(0, stage_match.start() - 20)
+            end = min(len(text_after_context), stage_match.end() + 100)
+            return text_after_context[start:end].strip()
+    return None
 
-    # Convert the lists of dictionaries into DataFrames
-    interview_info_df = pd.DataFrame(interview_info)
-    interview_flags_df = pd.DataFrame(interview_flags)
-
-    return interview_info_df, interview_flags_df
+def extract_interview_details(df, stages, context_patterns, column):
+    """
+    Extracts detailed information about interview stages from job descriptions.
+    
+    Args:
+        df: DataFrame with job_description, job_id, job_title, and job_link columns
+        stages: Dictionary with defined patterns for each interview stage
+    
+    Returns:
+        Tuple of two DataFrames: 
+        1. Detailed text for each interview stage
+        2. Boolean indicators for presence of each stage
+    """
+    base_df = df[['job_id', 'search_keyword', 'job_link']].copy()
+    
+    for stage, pattern in stages.items():
+        base_df[f'{stage}_text'] = df[column].apply(
+            lambda x: extract_single_stage(x, pattern)
+        )
+        base_df[stage] = base_df[f'{stage}_text'].notna()
+    
+    text_columns = ['job_id', 'search_keyword', 'job_link'] + [f'{s}_text' for s in stages]
+    flag_columns = ['job_id', 'search_keyword', 'job_link'] + list(stages.keys())
+    
+    return base_df[text_columns], base_df[flag_columns]
+'''

@@ -36,17 +36,6 @@ def get_time_keywords(language):
         }
     }
     return keywords.get(language.lower(), keywords['english'])  # default to English if language not found
-
-
-def convert_to_eur(df, exchange_rates):
-    # Create a series of rates matching the df's currency column
-    rates = df['currency'].map(exchange_rates).fillna(1)
-    
-    # Multiply only where salaries are not NA
-    df['min_salary_month_EUR'] = df['min_salary_monthly'].multiply(rates, fill_value=pd.NA)
-    df['max_salary_month_EUR'] = df['max_salary_monthly'].multiply(rates, fill_value=pd.NA)
-    
-    return df
     
 def convert_salary_to_monthly(df, salary_column, time_unit_column):
     """
@@ -198,30 +187,91 @@ def parse_salary_column(df, column_name='salary', languages=['english'], country
 
 def get_exchange_rate(base_currency, target_currency):
     """
-    This function makes a request to the Frankfurter.app API to retrieve current
-    exchange rate. 
-
-    Args:
-        base_currency (str): The currency code of the base currency (e.g., 'SEK', 'USD').
-        target_currency (str): The currency code of the target currency (e.g., 'EUR').
-
-    Returns:
-        float: The exchange rate from base_currency to target_currency if successful, None otherwise.'
+    Retrieve current exchange rate from Frankfurter.app API.
     """
-
     url = "https://api.frankfurter.app/latest"
     params = {
-        'from': base_currency,
-        'to': target_currency
+        'from': base_currency.upper(),
+        'to': target_currency.upper()
     }
-
     try:
         response = requests.get(url, params=params)
-        response.raise_for_status()  # Raise an exception for HTTP errors
+        response.raise_for_status()
         data = response.json()
-        
-        # Return the exchange rate
-        return data['rates'][target_currency]
+        return data['rates'][target_currency.upper()]
     except requests.exceptions.RequestException as e:
         print(f"Error fetching exchange rate from {base_currency} to {target_currency}: {e}")
         return None
+
+def convert_to_eur(df, exchange_rates):
+    """
+    Convert salary columns to EUR using provided exchange rates.
+    Only handles three known categories: 'dollar', 'euro', and 'sek'.
+    Properly handles NA values in both currency and salary columns.
+    """
+    df = df.copy()
+    
+    # Simple mapping for our three known categories
+    currency_mapping = {
+        'dollar': exchange_rates['USD'],
+        'euro': exchange_rates['EUR'],
+        'sek': exchange_rates['SEK']
+    }
+    
+    # Create a series of rates matching the df's currency column
+    # Replace NA with 1 temporarily for the multiplication
+    rates = df['currency'].map(currency_mapping).fillna(np.nan)
+    
+    # Print debug information
+    print("\nDebug Information:")
+    print("Currency mapping:", currency_mapping)
+    print("\nCurrency value counts:", df['currency'].value_counts(dropna=False))
+    
+    # Convert salaries
+    # Only convert where we have both a valid rate and a valid salary
+    mask = rates.notna() & df['min_salary_monthly'].notna()
+    df['min_salary_month_EUR'] = pd.NA
+    df.loc[mask, 'min_salary_month_EUR'] = (
+        df.loc[mask, 'min_salary_monthly'] * rates[mask]
+    )
+    
+    mask = rates.notna() & df['max_salary_monthly'].notna()
+    df['max_salary_month_EUR'] = pd.NA
+    df.loc[mask, 'max_salary_month_EUR'] = (
+        df.loc[mask, 'max_salary_monthly'] * rates[mask]
+    )
+    
+    return df
+
+def process_salaries(df):
+    """
+    Process all salaries and convert them to EUR.
+    """
+    # Initialize exchange rates
+    exchange_rates = {
+        'SEK': get_exchange_rate('SEK', 'EUR'),
+        'USD': get_exchange_rate('USD', 'EUR'),
+        'EUR': 1
+    }
+    
+    print("Exchange rates:", exchange_rates)
+    
+    # Convert salaries to EUR
+    df_converted = convert_to_eur(df, exchange_rates)
+    
+    # Show sample results for each currency type
+    print("\nSample conversions for each currency:")
+    for curr in ['dollar', 'euro', 'sek']:
+        print(f"\n{curr.upper()} conversions:")
+        sample = df_converted[df_converted['currency'] == curr][
+            ['currency', 'min_salary_monthly', 'max_salary_monthly', 
+             'min_salary_month_EUR', 'max_salary_month_EUR']].head(2)
+        print(sample)
+    
+    # Print summary of conversion results
+    print("\nConversion summary:")
+    print("Total rows:", len(df_converted))
+    print("Rows with min salary in EUR:", df_converted['min_salary_month_EUR'].notna().sum())
+    print("Rows with max salary in EUR:", df_converted['max_salary_month_EUR'].notna().sum())
+    
+    return df_converted
