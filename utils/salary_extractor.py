@@ -3,42 +3,12 @@ import requests
 import numpy as np
 import pandas as pd
 
-def get_time_keywords(language):
-    """Get time unit keywords for different languages"""
-    keywords = {
-        'english': {
-            'day': 'day',
-            'year': 'year|annual',
-            'month': 'month',
-            'hour': 'hour',
-            'week': 'week'
-        },
-        'french': {
-            'day': 'par jour',
-            'year': r'par\s*an|annuel|année',  
-            'month': r'par\s*mois|mensuel',  
-            'hour': r'par\s*heure|horaire',
-            'week': r'par\s*semaine|hebdomadaire'
-        },
-        'italian': {
-            'day': 'al giorno',
-            'year': 'anno|annuale',
-            'month': 'mese|mensile',
-            'hour': 'ora|orario',
-            'week': 'settimana|settimanale'
-        },
-        'swedish': {
-            'day': 'per dag',
-            'year': 'år|årlig',
-            'month': 'månad|mån',
-            'hour': 'timme|tim|/h',
-            'week': 'vecka'
-        }
-    }
-    return keywords.get(language.lower(), keywords['english'])  # default to English if language not found
+def get_time_keywords(language: str, time_keyword_dict: dict[str, dict[str, str]]) -> dict[str, str]:
+    '''Get time unit keywords for different languages.'''
+    return time_keyword_dict.get(language.lower(), time_keyword_dict['english'])
     
-def convert_salary_to_monthly(df, salary_column, time_unit_column):
-    """
+def convert_salary_to_monthly(df: pd.DataFrame, salary_column: str, time_unit_column: str) -> pd.Series:
+    '''
     Vectorized function to convert salary values to monthly equivalents based on time periods.
     
     Args:
@@ -47,7 +17,7 @@ def convert_salary_to_monthly(df, salary_column, time_unit_column):
     
     Returns:
         A pandas Series containing the monthly equivalent salaries
-    """
+    '''
     # Dictionary to map time periods to their monthly conversion factor
     time_period_map = {
         'hour': 160, 
@@ -70,16 +40,13 @@ def convert_salary_to_monthly(df, salary_column, time_unit_column):
     # Create a mapping Series for faster lookup
     conversion_factors = pd.Series(time_period_map)
     
-    # Map the conversion factors to the time periods
-    #factors = pd.Series(time_periods).map(conversion_factors)
-    # Convert time units to lowercase and map directly to conversion factors
-    # This will preserve NA values
+    # Convert time units to lowercase and map directly to conversion factors (preserve NAs)
     factors = df[time_unit_column].str.lower().map(time_period_map)
 
     # Multiply salary by conversion factors
     return df[salary_column] * factors
 
-def parse_french_salary(s):
+def parse_french_salary(s: pd.Series) -> pd.DataFrame:
     number_pattern = r'[\d\s\xa0]+(?:,\d+)?'
     
     def extract_numbers(row):
@@ -95,7 +62,7 @@ def parse_french_salary(s):
     })
 
 
-def parse_swedish_salary(s):
+def parse_swedish_salary(s: pd.Series) -> pd.DataFrame:
     number_pattern = r'[\d]+\s*[\d]*'
     numbers = s.str.findall(number_pattern).apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]])
     return pd.DataFrame({
@@ -105,7 +72,7 @@ def parse_swedish_salary(s):
     })
 
 
-def parse_italian_salary(s):
+def parse_italian_salary(s: pd.Series) -> pd.DataFrame:
     s = s.apply(lambda x: re.sub(r'(\d+)\.(\d{3})', r'\1\2', str(x)))  # Remove dots
     numbers = s.str.findall(r'\d+').apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]])
     return pd.DataFrame({
@@ -115,7 +82,7 @@ def parse_italian_salary(s):
     })
 
 
-def parse_usa_salary(s):
+def parse_usa_salary(s: pd.Series) -> pd.DataFrame:
     number_pattern = r'\$?(\d+(?:,\d{3})*(?:\.\d{2})?|\d+)'
     numbers = s.str.findall(number_pattern).apply(lambda x: [x[0], x[1] if len(x) >= 2 else x[0]])
     return pd.DataFrame({
@@ -125,7 +92,7 @@ def parse_usa_salary(s):
     })
 
 
-def parse_salary_column(df, column_name='salary', languages=['english'], country='USA'):
+def parse_salary_column(df: pd.DataFrame, column_name: str = 'salary', languages: list[str] = ['english'], country: str = 'USA', time_keyword_dict: dict[str, dict[str, str]] = None) -> pd.DataFrame:
     df = df.copy()
 
     # Initialize columns
@@ -161,9 +128,9 @@ def parse_salary_column(df, column_name='salary', languages=['english'], country
         raise ValueError(f"Unsupported country: {country}")
 
     # Time patterns
-    time_patterns = get_time_keywords(languages[0])
+    time_patterns = get_time_keywords(languages[0], time_keyword_dict)
     if len(languages) > 1:
-        time_patterns_2 = get_time_keywords(languages[1])
+        time_patterns_2 = get_time_keywords(languages[1], time_keyword_dict)
         for key in time_patterns:
             time_patterns[key] = f'{time_patterns[key]}|{time_patterns_2[key]}'
 
@@ -174,21 +141,11 @@ def parse_salary_column(df, column_name='salary', languages=['english'], country
     # Clean up null values
     for col in ['min_salary', 'max_salary', 'currency', 'time_unit']:
         df[col] = df[col].replace([np.nan, None], pd.NA)
-
-    # After parsing and filling in data, set the categories for 'currency' and 'time_unit'
-    #currency_categories = ['dollar', 'euro', 'sek']
-    #time_unit_categories = ['year', 'month', 'week', 'hour', 'day']
-    
-    # Convert to categorical columns with predefined categories
-    #df['currency'] = df['currency'].astype(pd.CategoricalDtype(categories=currency_categories, ordered=False))
-    #df['time_unit'] = df['time_unit'].astype(pd.CategoricalDtype(categories=time_unit_categories, ordered=False))
-    
+        
     return df
 
-def get_exchange_rate(base_currency, target_currency):
-    """
-    Retrieve current exchange rate from Frankfurter.app API.
-    """
+def get_exchange_rate(base_currency: str, target_currency: str) -> float:
+    '''Retrieve current exchange rate from Frankfurter.app API.'''
     url = "https://api.frankfurter.app/latest"
     params = {
         'from': base_currency.upper(),
@@ -203,12 +160,8 @@ def get_exchange_rate(base_currency, target_currency):
         print(f"Error fetching exchange rate from {base_currency} to {target_currency}: {e}")
         return None
 
-def convert_to_eur(df, exchange_rates):
-    """
-    Convert salary columns to EUR using provided exchange rates.
-    Only handles three known categories: 'dollar', 'euro', and 'sek'.
-    Properly handles NA values in both currency and salary columns.
-    """
+def convert_to_eur(df: pd.DataFrame, exchange_rates: dict[str, float]) -> pd.DataFrame:
+    '''Convert salary columns to EUR using provided exchange rates.'''
     df = df.copy()
     
     # Simple mapping for our three known categories
@@ -243,10 +196,8 @@ def convert_to_eur(df, exchange_rates):
     
     return df
 
-def process_salaries(df):
-    """
-    Process all salaries and convert them to EUR.
-    """
+def process_salaries(df: pd.DataFrame) -> pd.DataFrame:
+    '''Process all salaries and convert them to EUR.'''
     # Initialize exchange rates
     exchange_rates = {
         'SEK': get_exchange_rate('SEK', 'EUR'),

@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 from wordcloud import WordCloud
 
@@ -87,6 +88,43 @@ def plot_wordtree(data, country):
     plt.title(f'Wordcloud of Job Descriptions - {country}')
     plt.axis('off')
     plt.show()
+import matplotlib.pyplot as plt
+
+def plot_stacked_bar_chart(df, title="Stacked Bar Chart of Categories by Search Keyword", colormap='inferno', figsize=(16, 10)):
+    """
+    Creates a stacked bar chart showing the distribution of categories by search keyword.
+    
+    Args:
+        df: DataFrame containing 'Search Keyword', 'Category', and 'Count' columns
+        title: Title of the plot
+        colormap: Colormap for the stacked bars
+        figsize: Tuple for figure size
+    """
+    # Pivot the data for the stacked bar chart
+    pivot_df = df.pivot_table(
+        index='Search Keyword', 
+        columns='Category', 
+        values='Count', 
+        aggfunc='sum', 
+        observed=True
+    ).fillna(0)
+
+    # Create the figure and plot the stacked bar chart
+    plt.figure(figsize=figsize)
+    pivot_df.plot(kind='bar', stacked=True, colormap=colormap, edgecolor='black', figsize=figsize)
+
+    # Customize the plot
+    plt.title(title, fontsize=16)
+    plt.xlabel('Search Keyword', fontsize=14)
+    plt.ylabel('Count', fontsize=14)
+    plt.xticks(rotation=90, fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(title='Category', bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
 
 def plot_grouped_histograms(df, group_col, value_col, bins=10, kde=True, figsize=(16, 6), title='Histogram'):
     """
@@ -199,47 +237,61 @@ def plot_grouped_barplots(df, group_col, value_col, figsize=(16, 8), title='Bar 
     
     plt.show()
 
-
-def plot_keyword_heatmap(df, figsize=(15, 10), title="Keyword Distribution Across Countries and Job Titles"):
+def plot_top_keyword_heatmap(df, top_n=15, figsize=(15, 10), title="Top Keyword Distribution Across Job Titles"):
     """
-    Creates a heatmap showing the distribution of keywords across countries and job titles.
-    
+    Creates a simplified heatmap showing the top N aggregated keywords across job titles.
+
     Args:
-        df: DataFrame containing columns 'Category', 'Keyword', 'Search Keyword', 'Country', 'Count'
+        df: DataFrame containing columns 'Category', 'Keyword', 'Search Keyword', 'Count'
+        top_n: Integer for the number of top combinations to include
         figsize: Tuple for figure size
         title: String for plot title
     """
-    # Create pivot table for the heatmap
-    pivot_data = df.pivot_table(
-        values='Count',
-        index=['Category', 'Keyword'],  # Multi-level index
-        columns=['Country', 'Search Keyword'],
-        fill_value=0
+    # Aggregate data across all countries
+    aggregated_data = df.groupby(
+        ['Category', 'Keyword', 'Search Keyword'], 
+        as_index=False, 
+        observed=True  # Using observed=True to handle categories correctly
+    )['Count'].sum()
+
+    # Filter to keep only the top N combinations based on their total Count
+    top_combinations = (
+        aggregated_data.groupby(['Category', 'Keyword'])['Count']
+        .sum()
+        .nlargest(top_n)
+        .reset_index()[['Category', 'Keyword']]
     )
-    
+
+    # Merge to retain only rows matching the top combinations
+    filtered_data = aggregated_data.merge(top_combinations, on=['Category', 'Keyword'])
+
+    # Create pivot table for the heatmap
+    heatmap_data = filtered_data.pivot(
+        index='Search Keyword', 
+        columns='Keyword', 
+        values='Count'
+    )
+
     # Create figure with appropriate size
     plt.figure(figsize=figsize)
-    
+
     # Create heatmap
     sns.heatmap(
-        pivot_data,
-        cmap='YlGn',  # Yellow to Green colormap
-        annot=True,    # Show numbers in cells
-        fmt='g',       # Format as general number
-        cbar_kws={'label': 'Count'},
-        square=True,   # Make cells square
+        heatmap_data, 
+        annot=True, fmt='.0f', cmap='YlOrRd', 
+        cbar_kws={'label': 'Count'}
     )
-    
+
     # Customize the plot
-    plt.title(title, pad=20)
-    
-    # Rotate labels if needed
-    plt.xticks(rotation=45, ha='right')
-    plt.yticks(rotation=0)
-    
-    # Adjust layout to prevent label cutoff
+    plt.title(title)
+    plt.xlabel('Skill')
+    plt.ylabel('Role')
+    plt.xticks(rotation=45)
     plt.tight_layout()
+
+    # Show plot
     plt.show()
+
 
 def plot_top_keywords_by_category(df, n_top=5, figsize=(15, 8), title="Top Keywords by Category"):
     """
@@ -279,3 +331,60 @@ def plot_top_keywords_by_category(df, n_top=5, figsize=(15, 8), title="Top Keywo
     g.fig.suptitle(title, y=1.02)
     plt.tight_layout()
     plt.show()
+    
+def plot_keywords_per_category_subplots(df, n_top=5, figsize=(16, 12)):
+    """
+    Creates small subplots for each Category showing its top N keywords.
+
+    Args:
+        df: DataFrame containing columns 'Category', 'Keyword', 'Count'.
+        n_top: Number of top keywords to display per category.
+        figsize: Tuple for the overall figure size.
+    """
+    # Get the unique categories
+    categories = df['Category'].unique()
+
+    # Create a grid of subplots
+    n_categories = len(categories)
+    n_cols = 3  # Number of columns
+    n_rows = -(-n_categories // n_cols)  # Calculate rows needed (ceil division)
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize, constrained_layout=True)
+    axes = axes.flatten()  # Flatten the axes array for easy iteration
+
+    for i, category in enumerate(categories):
+        # Filter the data for the current category
+        category_data = df[df['Category'] == category]
+
+        # Get top n keywords for the current category
+        top_keywords = (category_data.groupby('Keyword')['Count']
+                        .sum()
+                        .nlargest(n_top)
+                        .reset_index())
+
+        # Plot the data
+        sns.barplot(
+            data=top_keywords,
+            x='Count',
+            y='Keyword',
+            color='mediumseagreen',
+            ax=axes[i]
+        )
+
+        # Customize each subplot
+        axes[i].set_title(f"{category}", fontsize=10)
+        axes[i].set_xlabel('Count', fontsize=8)
+        axes[i].set_ylabel('Keyword', fontsize=8)
+        axes[i].tick_params(axis='both', labelsize=8)
+
+    # Hide any unused axes
+    for j in range(i + 1, len(axes)):
+        axes[j].axis('off')
+
+    # Add a main title for the figure
+    fig.suptitle(f"Top {n_top} Keywords by Category", fontsize=16, y=1.02)
+
+    # Show the figure
+    plt.tight_layout()
+    plt.show()
+

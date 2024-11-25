@@ -1,23 +1,17 @@
 import pandas as pd
 
-def desc_categorical(data):
-    """
-    Function for describing categorical data. 
-    Prints value counts for categorical columns in the given DataFrame.
-    Identifies string and object columns, excluding 'job_description' and 'job_link' columns. 
-    """
+def desc_categorical(data: pd.DataFrame) -> None:
+    '''Prints value counts for categorical columns in the given DataFrame.'''
     # Exclude these 
-    string_columns = data.select_dtypes(include='string').drop(columns=['job_description', 'job_description_norm'])# Skip job description! 
+    string_columns = data.select_dtypes(include='string').drop(columns=['job_description', 'job_description_norm'])
     object_columns = data.select_dtypes(include='object').drop(columns='job_link')
-
-    # Loop through the columns and print value counts
     for col in string_columns.columns:
         print(f"Value counts for column: {col}\n{string_columns[col].value_counts()}\n")
     for col in object_columns.columns:
         print(f"Value counts for column: {col}\n{object_columns[col].value_counts()}\n")
 
-def get_top_skills_by_job(df, n_skills=10, by_country=False):
-    """
+def get_top_skills_by_job(df: pd.DataFrame, n_skills: int = 20, by_country: bool = False) -> pd.DataFrame:
+    '''
     Get top n skills for each job type, optionally split by country.
     
     Args:
@@ -27,7 +21,7 @@ def get_top_skills_by_job(df, n_skills=10, by_country=False):
     
     Returns:
         DataFrame with top skills per job type
-    """
+    '''
     index = ['Search Keyword', 'Keyword', 'Category']
     groupby = ['Search Keyword']
     sort_by = ['Search Keyword', 'Count']
@@ -60,21 +54,21 @@ def get_top_skills_by_job(df, n_skills=10, by_country=False):
     df = df.query(f'rank <= {n_skills}')
     
     # Sort values with specified ascending/descending
-    df = df.sort_values(sort_by, ascending=sort_ascending)  # Changed this line
+    df = df.sort_values(sort_by, ascending=sort_ascending) 
     
     # Drop rank column
     df = df.drop('rank', axis=1)
     
     return df
 
-def display_top_skills(df):
-    """
+def display_top_skills(df: pd.DataFrame) -> None:
+    '''
     Display top skills from the DataFrame returned by get_top_skills_by_job.
     
     Args:
         df: DataFrame with columns including Search Keyword, Keyword, Count, Category
             (and optionally Country)
-    """
+    '''
     has_country = 'Country' in df.columns
     columns_to_show = ['Keyword', 'Count', 'Category']
     
