@@ -10,74 +10,170 @@ def desc_categorical(data: pd.DataFrame) -> None:
     for col in object_columns.columns:
         print(f"Value counts for column: {col}\n{object_columns[col].value_counts()}\n")
 
-def get_top_skills_by_job(df: pd.DataFrame, n_skills: int = 20, by_country: bool = False) -> pd.DataFrame:
-    '''
-    Get top n skills for each job type, optionally split by country.
+
+def count_keywords(
+    df: pd.DataFrame,
+    country: str, 
+    software_keywords: dict,
+    job_description_col: str,
+) -> pd.DataFrame:
+    '''Count occurrences of predefined keyword categories in job descriptions.
     
     Args:
-        df: DataFrame with columns ['Search Keyword', 'Keyword', 'Category', 'Count']
-        n_skills: Number of top skills to return for each job type (default: 10)
-        by_country: Whether to analyze separately by country (default: False)
+        df: DataFrame with job descriptions and metadata.
+        country: Country to analyze.  
+        software_keywords: Dict mapping keyword categories to keyword lists.
+        job_description_col: Column containing job description text.
+        
+    Returns:    
+        DataFrame with keyword counts by category/country.
+
+    Please note: 
+        For later calculation of relative frequency: note that the total number of job listings will be different from the sum of the counts here.
+        A single job listing can contain multiple keywords (e.g., a job might require both 'python' and 'sql'). 
+        The same job listing will be counted multiple times if it contains multiple keywords. 
+    '''
+    df_filtered = df[df['country'] == country].copy()
+    df_filtered[job_description_col] = df_filtered[job_description_col].str.lower()
+    
+    keyword_df = pd.DataFrame(
+        [
+            (category, keyword) 
+            for category, keywords in software_keywords.items()
+            for keyword in keywords  
+        ],
+        columns=['Category', 'Keyword'],
+    )
+    
+    result = (  
+        df_filtered[[job_description_col, 'search_keyword']]
+        .assign(key=1)
+        .merge(keyword_df.assign(key=1), on='key') 
+        .drop('key', axis=1)
+    )
+    
+    result['Count'] = result.apply(
+        lambda row: 1 if row['Keyword'] in row[job_description_col] else 0,
+        axis=1,  
+    )
+    
+    result = (
+        result[result['Count'] > 0]
+        .assign(Country=country)  
+        [['Category', 'Keyword', 'Count', 'search_keyword', 'Country']]
+        .rename(columns={'search_keyword': 'Search Keyword'})
+    )
+    
+    return ( 
+        result.groupby(
+            ['Category', 'Keyword', 'Search Keyword', 'Country'],
+            observed=True,
+        )
+        .sum()
+        .reset_index()
+    )
+
+def calculate_country_frequencies(technical_skills: pd.DataFrame, df_combined: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Calculate keyword frequencies relative to total job listings per country (regardless of search keyword).
+    
+    Args:
+        technical_skills: DataFrame with keyword counts
+        df_combined: Original DataFrame with all job listings
     
     Returns:
-        DataFrame with top skills per job type
+        DataFrame with country-specific counts and frequencies
     '''
-    index = ['Search Keyword', 'Keyword', 'Category']
-    groupby = ['Search Keyword']
-    sort_by = ['Search Keyword', 'Count']
-    sort_ascending = [True, False]  # Changed this line
+    # Calculate total jobs per country (ignoring search keyword)
+    total_jobs_by_country = (df_combined
+                           .groupby('country', observed=True)
+                           .size()
+                           .reset_index(name='Total_jobs'))
     
-    if by_country:
-        index = ['Search Keyword', 'Country', 'Keyword', 'Category']
-        groupby = ['Search Keyword', 'Country']
-        sort_by = ['Search Keyword', 'Country', 'Count']
-        sort_ascending = [True, True, False]  # Changed this line
+    # Sum counts by country and keyword
+    country_keyword_counts = (technical_skills
+        .groupby(['Country', 'Category', 'Keyword'], observed=True)['Count']
+        .sum()
+        .reset_index())
     
-    # Aggregate counts
-    df = df.pivot_table(
-        index=index,
-        values='Count',
-        aggfunc='sum',
-        observed=True
+    # Calculate frequencies
+    results_with_freq = (country_keyword_counts
+        .merge(
+            total_jobs_by_country,
+            left_on='Country',
+            right_on='country'
+        )
+        .assign(
+            Frequency=lambda x: (x['Count'] / x['Total_jobs'] * 100).round(2)
+        )
+        .drop('country', axis=1)
     )
     
-    # Reset index to get columns back
-    df = df.reset_index()
-    
-    # Add rank within groups
-    df = df.assign(
-        rank=lambda x: x.groupby(groupby, observed=True)['Count']
-        .rank(method='dense', ascending=False)
-    )
-    
-    # Filter to top n_skills
-    df = df.query(f'rank <= {n_skills}')
-    
-    # Sort values with specified ascending/descending
-    df = df.sort_values(sort_by, ascending=sort_ascending) 
-    
-    # Drop rank column
-    df = df.drop('rank', axis=1)
-    
-    return df
+    return results_with_freq.sort_values(['Country', 'Frequency'], ascending=[True, False])
 
-def display_top_skills(df: pd.DataFrame) -> None:
+def calculate_global_frequencies(technical_skills: pd.DataFrame, df_combined: pd.DataFrame) -> pd.DataFrame:
     '''
-    Display top skills from the DataFrame returned by get_top_skills_by_job.
+    Calculate global keyword frequencies across all countries and search keywords.
     
     Args:
-        df: DataFrame with columns including Search Keyword, Keyword, Count, Category
-            (and optionally Country)
-    '''
-    has_country = 'Country' in df.columns
-    columns_to_show = ['Keyword', 'Count', 'Category']
+        technical_skills: DataFrame with keyword counts
+        df_combined: Original DataFrame with all job listings
     
-    for job in df['Search Keyword'].unique():
-        if has_country:
-            for country in df['Country'].unique():
-                print(f"\n\nTop skills for {job} in {country}:")
-                mask = (df['Search Keyword'] == job) & (df['Country'] == country)
-                print(df[mask][columns_to_show].to_string())
-        else:
-            print(f"\n\nTop skills for {job}:")
-            print(df[df['Search Keyword'] == job][columns_to_show].to_string())
+    Returns:
+        DataFrame with global counts and frequencies for each skill
+    '''
+    # Calculate total number of jobs across everything
+    total_jobs = len(df_combined)
+    
+    # Sum counts across all countries and search keywords
+    global_counts = (technical_skills
+        .groupby(['Category', 'Keyword'], observed=True)['Count']
+        .sum()
+        .reset_index()
+        .assign(
+            Frequency=lambda x: (x['Count'] / total_jobs * 100).round(2),
+            Total_jobs=total_jobs
+        )
+        .sort_values('Frequency', ascending=False)
+    )
+    
+    return global_counts
+
+def calculate_frequencies_by_search_keyword(technical_skills: pd.DataFrame, df_combined: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Calculate keyword frequencies for each search keyword across all countries.
+    
+    Args:
+        technical_skills: DataFrame with keyword counts
+        df_combined: Original DataFrame with all job listings
+    
+    Returns:
+        DataFrame with counts and frequencies by search keyword
+    '''
+    # Calculate total jobs per search keyword
+    total_jobs_by_search = (df_combined
+                           .groupby('search_keyword', observed=True)
+                           .size()
+                           .reset_index(name='Total_jobs'))
+    
+    # Sum counts across countries for each search keyword and keyword
+    search_keyword_counts = (technical_skills
+        .groupby(['Search Keyword', 'Category', 'Keyword'], observed=True)['Count']
+        .sum()
+        .reset_index())
+    
+    # Calculate frequencies
+    results_with_freq = (search_keyword_counts
+        .merge(
+            total_jobs_by_search,
+            left_on='Search Keyword',
+            right_on='search_keyword'
+        )
+        .assign(
+            Frequency=lambda x: (x['Count'] / x['Total_jobs'] * 100).round(2)
+        )
+        .drop('search_keyword', axis=1)
+        .sort_values(['Search Keyword', 'Frequency'], ascending=[True, False])
+    )
+    
+    return results_with_freq

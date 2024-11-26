@@ -111,64 +111,6 @@ def extract_keywords(
     return word_counts.most_common(10), all_tokens
 
 
-def count_keywords(
-    df: pd.DataFrame,
-    country: str, 
-    software_keywords: dict,
-    job_description_col: str,
-) -> pd.DataFrame:
-    '''Count occurrences of predefined keyword categories in job descriptions.
-    
-    Args:
-        df: DataFrame with job descriptions and metadata.
-        country: Country to analyze.  
-        software_keywords: Dict mapping keyword categories to keyword lists.
-        job_description_col: Column containing job description text.
-        
-    Returns:    
-        DataFrame with keyword counts by category/country.
-    '''
-    df_filtered = df[df['country'] == country].copy()
-    df_filtered[job_description_col] = df_filtered[job_description_col].str.lower()
-    
-    keyword_df = pd.DataFrame(
-        [
-            (category, keyword) 
-            for category, keywords in software_keywords.items()
-            for keyword in keywords  
-        ],
-        columns=['Category', 'Keyword'],
-    )
-    
-    result = (  
-        df_filtered[[job_description_col, 'search_keyword']]
-        .assign(key=1)
-        .merge(keyword_df.assign(key=1), on='key') 
-        .drop('key', axis=1)
-    )
-    
-    result['Count'] = result.apply(
-        lambda row: 1 if row['Keyword'] in row[job_description_col] else 0,
-        axis=1,  
-    )
-    
-    result = (
-        result[result['Count'] > 0]
-        .assign(Country=country)  
-        [['Category', 'Keyword', 'Count', 'search_keyword', 'Country']]
-        .rename(columns={'search_keyword': 'Search Keyword'})
-    )
-    
-    return ( 
-        result.groupby(
-            ['Category', 'Keyword', 'Search Keyword', 'Country'],
-            observed=True,
-        )
-        .sum()
-        .reset_index()
-    )
-
-
 def extract_single_stage(
     text: str,
     pattern: str, 
