@@ -32,7 +32,29 @@ def check_duplicates(data: pd.DataFrame) -> None:
         print(duplicates)
 
 def remove_duplicates_jobdesc(data: pd.DataFrame) -> pd.DataFrame:
-    subset = ['job_description', 'search_location', 'job_title']
-    output = data.drop_duplicates(subset=subset, keep='last')
-    print(f'Removed {len(data) - len(output)} duplicates based on {subset}. Size before: {len(data)}. Size after: {len(output)}')
-    return output
+   '''Remove duplicates based on the core identifying information of the job posting.'''
+   # Get country name if it exists in the data
+   country_name = data['country'].iloc[0] if 'country' in data.columns else 'Unknown'
+   
+   # Use columns that identify unique job postings
+   subset1 = [
+       'company_name',
+       'company_location',
+       'job_description_norm', # normalized description to catch true duplicates
+       'salary'
+   ]
+   
+   output1 = data.drop_duplicates(subset=subset1, keep='last')
+   
+   # Then remove cross-listed duplicates using job_link as backup
+   output2 = output1.drop_duplicates(subset=['job_link'], keep='last')
+   
+   # Show duplicates that were removed
+   if len(data) > len(output2):
+       print(f"Initial rows: {len(data)}")
+       print(f"Rows after removing exact duplicates: {len(output1)}")
+       print(f"Final rows: {len(output2)}")
+       print(f"Total duplicates removed: {len(data) - len(output2)}")
+       print("-" * 50)
+       
+   return output2

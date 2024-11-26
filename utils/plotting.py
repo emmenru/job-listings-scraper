@@ -3,71 +3,102 @@ import pandas as pd
 import seaborn as sns
 from wordcloud import WordCloud
 
-def plot_categorical(df, categorical_cols, top_n=10, horizontal=False, figsize=(10, 6)):
-    """
-    Creates bar charts to visualize the distribution of categorical columns in a DataFrame.
-    Args:
-        df: The DataFrame containing the data.
-        categorical_cols: A list of strings representing the categorical columns to plot.
-        top_n: An integer specifying the number of top categories to display (default: 10).
-        horizontal: A boolean indicating whether to create a horizontal bar chart (default: False).
-        figsize: Tuple specifying the figure size (width, height) for each plot.
-    """
-    for col in categorical_cols:
-        plt.figure(figsize=figsize)
-        
-        # Count the top categories
-        top_categories = df[col].value_counts().nlargest(top_n)
-        
-        # Create a count plot with mediumseagreen color
+def plot_categorical(df: pd.DataFrame, categorical_cols: list[str], top_n: int = 10, 
+                    horizontal: bool = False, figsize: tuple[int, int] = (2.5, 1.5)) -> None:
+    """Bar chart plotting for categorical columns."""
+    value_counts = {col: df[col].value_counts() for col in categorical_cols}
+    
+    for col, counts in value_counts.items():
+        fig, ax = plt.subplots(figsize=figsize)
+        top_categories = counts.nlargest(top_n)
         if horizontal:
-            sns.countplot(data=df, y=col, order=top_categories.index, color='mediumseagreen')
+            sns.countplot(
+                data=df[df[col].isin(top_categories.index)],
+                y=col,
+                order=top_categories.index,
+                color='mediumseagreen',
+                ax=ax)
         else:
-            sns.countplot(data=df, x=col, order=top_categories.index, color='mediumseagreen')
-        
-        plt.title(f'Top {top_n} Categories of Column: {col}')
-        plt.xticks(rotation=45)
-        plt.tight_layout()
+            sns.countplot(
+                data=df[df[col].isin(top_categories.index)],
+                x=col,
+                order=top_categories.index,
+                color='mediumseagreen',
+                ax=ax)
+        ax.set_title(f'Top {top_n} Categories of Column: {col}')
+        ax.tick_params(axis='x', rotation=45)
+        fig.tight_layout()
         plt.show()
 
-def plot_numerical(df, numerical_cols):
-    """
-    Performs exploratory data analysis for specified numerical columns in a DataFrame and generates visualizations.
-
-    Args:
-        df: The DataFrame containing the data.
-        numerical_cols: A list of strings representing the numerical columns to analyze.
-    """
+def detect_outliers(df: pd.DataFrame, numerical_cols: list[str]) -> tuple[dict, list]:
+    '''Detect outliers using IQR method.'''
+    outlier_info = {}  # dictionary to store index and source
+    outliers_data = []
+    
     for col in numerical_cols:
-        # Drop NaN values and check for valid data
-        valid_data = df[col].dropna()
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = max(0, Q1 - 1.5 * IQR)
+        upper_bound = Q3 + 1.5 * IQR
         
-        # Check if there are enough values to plot
-        # Summary statistics
-        print(f"Summary statistics for {col}:")
-        print(valid_data.describe())
-        print("\n")
+        outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)
+        outliers = df[col][outlier_mask]
+        
+
+        for idx in outliers.index:
+            outlier_info[idx] = outlier_info.get(idx, []) + ['min salary' if 'min' in col else 'max salary']
             
-        # Boxplot
-        plt.figure(figsize=(12, 6))
-        sns.boxplot(x=valid_data)  # Use valid data for plotting
-        plt.title(f'Boxplot of Column {col}')
-        plt.xlabel(col)
-        plt.grid()
-        plt.show()
+        outliers_data.extend([(col, value) for value in outliers])
+        
+        print(f'\nOutliers for {col}:')
+        print(f'Number of outliers: {len(outliers)}')
+        print('Outlier values:')
+        for value in sorted(outliers.values):
+            print(f'€{value:,.2f}')
+        print(f'Lower bound: €{lower_bound:,.2f}')
+        print(f'Upper bound: €{upper_bound:,.2f}')
+    
+    return outlier_info, outliers_data
+
+def plot_boxplot(df: pd.DataFrame, numerical_cols: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    ''' Plot numerical columns in a single boxplot using melted data + identify outliers. Returns outliers_df, original_rows_with_outliers.'''
+    plt.figure(figsize=(5, 3))
+    melted_df = df[numerical_cols].melt(var_name='Variable', value_name='EUR per month')
+    ax = sns.boxplot(data=melted_df, x='Variable', y='EUR per month', width=0.2, 
+                    color='mediumseagreen', 
+                    showfliers=False)
+    
+    outlier_info, outliers_data = detect_outliers(df, numerical_cols)
+    outliers_df = pd.DataFrame(outliers_data, columns=['Variable', 'EUR per month']) if outliers_data else pd.DataFrame()
+    
+    if not outliers_df.empty:
+        sns.stripplot(data=outliers_df, x='Variable', y='EUR per month',
+                     color='darkgreen', size=6, alpha=0.6,
+                     jitter=0.2)
+    
+    plt.title('Min vs Max Salary')
+    plt.xticks(rotation=0)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    
+    # Get the full rows from original DataFrame and add outlier source
+    original_rows = df.loc[list(outlier_info.keys())].copy()
+    original_rows['outlier_source'] = [','.join(sources) for sources in outlier_info.values()]
+    
+    return outliers_df, original_rows
 
 def plot_common_keywords(common_keywords, country):
-    """
+    '''
     Creates a bar chart to visualize the most common keywords found in job descriptions for a specific country.
 
     Args:
         common_keywords: A list of tuples where each tuple contains a keyword (string) and its frequency (integer).
         country: The name of the country to be displayed in the plot title.
-    """
+    '''
     # Unzip the list of tuples into two lists: words and counts
     words, counts = zip(*common_keywords)
-
-    # Create a bar plot
     plt.figure(figsize=(10, 6))  # Set the figure size
     plt.bar(words, counts, color='mediumseagreen')  # Bar plot
     plt.xlabel('Keywords', fontsize=14)  # Label for x-axis
@@ -88,10 +119,9 @@ def plot_wordtree(data, country):
     plt.title(f'Wordcloud of Job Descriptions - {country}')
     plt.axis('off')
     plt.show()
-import matplotlib.pyplot as plt
 
 def plot_stacked_bar_chart(df, title="Stacked Bar Chart of Categories by Search Keyword", colormap='inferno', figsize=(16, 10)):
-    """
+    '''
     Creates a stacked bar chart showing the distribution of categories by search keyword.
     
     Args:
@@ -99,7 +129,7 @@ def plot_stacked_bar_chart(df, title="Stacked Bar Chart of Categories by Search 
         title: Title of the plot
         colormap: Colormap for the stacked bars
         figsize: Tuple for figure size
-    """
+    '''
     # Pivot the data for the stacked bar chart
     pivot_df = df.pivot_table(
         index='Search Keyword', 
@@ -127,18 +157,7 @@ def plot_stacked_bar_chart(df, title="Stacked Bar Chart of Categories by Search 
 
 
 def plot_grouped_histograms(df, group_col, value_col, bins=10, kde=True, figsize=(16, 6), title='Histogram'):
-    """
-    Plots histograms for a numerical column grouped by a categorical column.
-
-    Args:
-        df (DataFrame): The data source.
-        group_col (str): The column to group by (e.g., country).
-        value_col (str): The numerical column to plot (e.g., salary).
-        bins (int): Number of bins for the histogram.
-        kde (bool): Whether to include a Kernel Density Estimate (KDE) curve.
-        figsize (tuple): Figure size.
-        title (str): Overall title for the plot.
-    """
+    '''Plots histograms for a numerical column grouped by a categorical column.'''
     unique_groups = df[group_col].unique()
     fig, axes = plt.subplots(1, len(unique_groups), figsize=figsize)
 
@@ -161,36 +180,8 @@ def plot_grouped_histograms(df, group_col, value_col, bins=10, kde=True, figsize
     plt.tight_layout()
     plt.show()
 
-def plot_grouped_boxplots(df, group_col, value_col, figsize=(16, 6), title='Boxplot'):
-    """
-    Plots boxplots for a numerical column grouped by a categorical column.
-    Args:
-        df (DataFrame): The data source.
-        group_col (str): The column to group by (e.g., country).
-        value_col (str): The numerical column to plot (e.g., salary).
-        figsize (tuple): Figure size.
-        title (str): Overall title for the plot.
-    """
-    unique_groups = df[group_col].unique()
-    fig, axes = plt.subplots(1, len(unique_groups), figsize=figsize)
-    
-    for i, group in enumerate(unique_groups):
-        group_data = df[df[group_col] == group]
-        sns.boxplot(
-            y=value_col,
-            data=group_data,
-            color='mediumseagreen',
-            ax=axes[i]
-        )
-        axes[i].set_title(group)
-        axes[i].set_ylabel('EUR')
-    
-    plt.suptitle(title)
-    plt.tight_layout()
-    plt.show()
-    
 def plot_grouped_barplots(df, group_col, value_col, figsize=(16, 8), title='Bar Plot', top_n=10):
-    """
+    '''
     Plots bar plots for a categorical column grouped by another categorical column.
     Args:
         df (DataFrame): The data source.
@@ -199,7 +190,7 @@ def plot_grouped_barplots(df, group_col, value_col, figsize=(16, 8), title='Bar 
         figsize (tuple): Figure size - made taller by default.
         title (str): Overall title for the plot.
         top_n (int): Number of top categories to show.
-    """
+    '''
     unique_groups = df[group_col].unique()
     # Create figure with more bottom space
     fig, axes = plt.subplots(1, len(unique_groups), figsize=figsize)
@@ -238,7 +229,7 @@ def plot_grouped_barplots(df, group_col, value_col, figsize=(16, 8), title='Bar 
     plt.show()
 
 def plot_top_keyword_heatmap(df, top_n=15, figsize=(15, 10), title="Top Keyword Distribution Across Job Titles"):
-    """
+    '''
     Creates a simplified heatmap showing the top N aggregated keywords across job titles.
 
     Args:
@@ -246,7 +237,7 @@ def plot_top_keyword_heatmap(df, top_n=15, figsize=(15, 10), title="Top Keyword 
         top_n: Integer for the number of top combinations to include
         figsize: Tuple for figure size
         title: String for plot title
-    """
+    '''
     # Aggregate data across all countries
     aggregated_data = df.groupby(
         ['Category', 'Keyword', 'Search Keyword'], 
@@ -294,7 +285,7 @@ def plot_top_keyword_heatmap(df, top_n=15, figsize=(15, 10), title="Top Keyword 
 
 
 def plot_top_keywords_by_category(df, n_top=5, figsize=(15, 8), title="Top Keywords by Category"):
-    """
+    '''
     Creates a faceted bar plot showing top keywords in each category.
     
     Args:
@@ -302,7 +293,7 @@ def plot_top_keywords_by_category(df, n_top=5, figsize=(15, 8), title="Top Keywo
         n_top: Number of top keywords to show per category
         figsize: Tuple for figure size
         title: String for plot title
-    """
+    '''
     # Get top n keywords per category
     top_keywords = (df.groupby(['Category', 'Keyword'])['Count']
                    .sum()
@@ -333,14 +324,14 @@ def plot_top_keywords_by_category(df, n_top=5, figsize=(15, 8), title="Top Keywo
     plt.show()
     
 def plot_keywords_per_category_subplots(df, n_top=5, figsize=(16, 12)):
-    """
+    '''
     Creates small subplots for each Category showing its top N keywords.
 
     Args:
         df: DataFrame containing columns 'Category', 'Keyword', 'Count'.
         n_top: Number of top keywords to display per category.
         figsize: Tuple for the overall figure size.
-    """
+    '''
     # Get the unique categories
     categories = df['Category'].unique()
 
