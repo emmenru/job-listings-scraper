@@ -189,3 +189,46 @@ region_mapping_fr = {
        '69': 'Auvergne-Rhône-Alpes',
        '13': 'Provence-Alpes-Côte d\'Azur'
    }
+
+# Location mappings for Sweden
+dept_mapping_se = {
+    'Stockholm': '01 - Stockholm län',
+    'Solna': '01 - Stockholm län',
+    'Sundbyberg': '01 - Stockholm län',
+    'Danderyd': '01 - Stockholm län',
+    'Vällingby': '01 - Stockholm län',
+    'Bromma': '01 - Stockholm län',
+    'Göteborg': '14 - Västra Götalands län',
+    'Mölndal': '14 - Västra Götalands län',
+    'Kungälv': '14 - Västra Götalands län',
+    'Malmö': '12 - Skåne län',
+    'Lund': '12 - Skåne län'
+}
+
+region_mapping_se = {
+    '01': 'Stockholm',
+    '14': 'Västra Götaland',
+    '12': 'Skåne'
+}
+
+
+# Location mappings for Italy 
+dept_mapping_it = {
+    'Roma': 'RM - Roma',
+    'Milano': 'MI - Milano',
+    'Napoli': 'NA - Napoli',
+    'Assago': 'MI - Milano',
+    'Sesto San Giovanni': 'MI - Milano',
+    'Cernusco sul Naviglio': 'MI - Milano',
+    'Rozzano': 'MI - Milano',
+    'Monza': 'MB - Monza e Brianza',
+    'Vimercate': 'MB - Monza e Brianza',
+    'Casalnuovo di Napoli': 'NA - Napoli'
+}
+
+region_mapping_it = {
+   'RM': 'Lazio',
+   'MI': 'Lombardia', 
+   'NA': 'Campania',
+   'MB': 'Lombardia'
+}

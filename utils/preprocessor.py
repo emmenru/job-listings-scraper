@@ -60,23 +60,34 @@ def remove_duplicates_jobdesc(data: pd.DataFrame) -> pd.DataFrame:
    return output2
 
 def standardize_locations(df: pd.DataFrame, 
-                        location_column: str, 
-                        department_mapping: dict[str, str], 
-                        region_mapping: dict[str, str]) -> pd.DataFrame:
-    df = df.copy()
-    
-    df.loc[:, 'location_clean'] = df[location_column].str.replace(r'Télétravail (?:partiel |à )?à ?', '', regex=True)
-    df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\d{5}\s?', '', regex=True)
-    df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\(\d{2}\)', '', regex=True)
-    df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\s\d{1,2}e', '', regex=True)
-    df.loc[:, 'location_clean'] = df['location_clean'].str.strip()
-    
-    df.loc[:, 'department'] = df['location_clean'].map(department_mapping)
-    df.loc[:, 'dept_number'] = df['department'].str.extract(r'(\d{2})')
-    df.loc[:, 'region'] = df['dept_number'].map(region_mapping)
-    
-    df.loc[:, 'postal_code'] = df[location_column].str.extract(r'(\d{5})')
-    df.loc[:, 'city_name'] = df['location_clean']
-    df.loc[:, 'country'] = 'France'
-    
-    return df[['job_id', location_column, 'city_name', 'department', 'region', 'country', 'postal_code']]
+                       location_column: str, 
+                       department_mapping: dict[str, str], 
+                       region_mapping: dict[str, str],
+                       country: str) -> pd.DataFrame:
+   df = df.copy()
+   
+   if country == 'France':
+       df.loc[:, 'location_clean'] = df[location_column].str.replace(r'Télétravail (?:partiel |à )?à ?', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\d{5}\s?', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\(\d{2}\)', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\s\d{1,2}e', '', regex=True)
+   
+   elif country == 'Sweden':
+       df.loc[:, 'location_clean'] = df[location_column].str.replace(r'Distansjobb in ', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\d{3}\s?\d{2}\s?', '', regex=True)
+   
+   elif country == 'Italy':
+       df.loc[:, 'location_clean'] = df[location_column].str.replace(r'Remoto in ', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'Parzialmente remoto in ', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'\d{5}\s?', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r', \w+', '', regex=True)
+       df.loc[:, 'location_clean'] = df['location_clean'].str.replace(r'Provincia di ', '', regex=True)
+   
+   df.loc[:, 'location_clean'] = df['location_clean'].str.strip()
+   df.loc[:, 'department'] = df['location_clean'].map(department_mapping)
+   df.loc[:, 'dept_number'] = df['department'].str.extract(r'^(\w{2})')
+   df.loc[:, 'region'] = df['dept_number'].map(region_mapping)
+   df.loc[:, 'city_name'] = df['location_clean']
+   df.loc[:, 'country'] = country
+   
+   return df[['job_id', location_column, 'city_name', 'department', 'region', 'country']]
