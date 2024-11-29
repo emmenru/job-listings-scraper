@@ -1,5 +1,7 @@
 import pandas as pd
 
+from utils.dictionaries import LOCATION_MAPPINGS, CLEANING_PATTERNS
+
 def merge_US_cities(cities: list[str], DATA_PATH: str) -> pd.DataFrame:
     # Load data for the first city and add the 'country' column manually
     df_NY = pd.read_csv(f'{DATA_PATH}{"USA_"}{cities[0]}.csv')
@@ -55,9 +57,58 @@ def remove_duplicates_jobdesc(data: pd.DataFrame) -> pd.DataFrame:
        print(f"Rows after removing exact duplicates: {len(output1)}")
        print(f"Final rows: {len(output2)}")
        print(f"Total duplicates removed: {len(data) - len(output2)}")
-       print("-" * 50)
+       #print("-" * 50)
        
    return output2
+
+
+def standardize_locations_2(df: pd.DataFrame,
+                       location_column: str,
+                       department_mapping: dict[str, str],
+                       region_mapping: dict[str, str],
+                       country: str,
+                       cleaning_patterns: dict = CLEANING_PATTERNS) -> pd.DataFrame:
+    df = df.copy()
+    df['location_clean'] = df[location_column].str.lower()
+    
+    # Apply cleaning patterns
+    for pattern, replacement in cleaning_patterns.get(country, []):
+        df['location_clean'] = df['location_clean'].str.replace(pattern, replacement, regex=True)
+    
+    df['location_clean'] = df['location_clean'].str.strip()
+    
+    # Special handling for each country
+    if country == 'France':
+        case_insensitive_mapping = {k.lower(): v for k, v in department_mapping.items()}
+        df['department'] = df['location_clean'].map(case_insensitive_mapping)
+        df['location_clean'] = df['location_clean'].apply(lambda x: 
+            '-'.join(word.capitalize() if i == 0 or word.lower() not in 
+                    ['sur', 'en', 'le', 'la', 'les', 'sous', 'aux', 'de', 'du', 'des', 'd', 'l'] 
+                    else word.lower() 
+                    for i, word in enumerate(x.split('-'))))
+    elif country == 'USA':
+        df['state_code'] = df[location_column].str.extract(r',?\s*([A-Z]{2})\s*(?:\d{5})?')[0]
+        df['location_clean'] = df['location_clean'].str.title()
+        df['department'] = df.apply(
+            lambda row: department_mapping.get(row['location_clean']) or 
+            "NY - New York State" if row['location_clean'] in 
+            ['New York', 'Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+            else f"{row['state_code']} - {row['state_code']} State",
+            axis=1)
+        df['dept_number'] = df['state_code']
+    else:
+        df['location_clean'] = df['location_clean'].str.title()
+        df['department'] = df['location_clean'].map(department_mapping)
+        df['dept_number'] = df['department'].str.extract(r'^(\w{2})')
+    
+    if country != 'USA':
+        df['dept_number'] = df['department'].str.extract(r'^(\w{2})')
+    
+    df['region'] = df['dept_number'].map(region_mapping)
+    df['city_name'] = df['location_clean']
+    df['country'] = country
+    
+    return df[['job_id', location_column, 'city_name', 'department', 'region', 'country']]
 
 def standardize_locations(df: pd.DataFrame, 
                        location_column: str, 

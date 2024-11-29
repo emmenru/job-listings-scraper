@@ -126,113 +126,122 @@ interview_stages = {
 
 # Location mappings for France 
 dept_mapping_fr = {
-   'Paris': '75 - Paris',
-   'Bagneux': '92 - Hauts-de-Seine',
-   'La Défense': '92 - Hauts-de-Seine',
-   'Nanterre': '92 - Hauts-de-Seine',
-   'Bois-Colombes': '92 - Hauts-de-Seine',
-   'Levallois-Perret': '92 - Hauts-de-Seine',
-   'Courbevoie': '92 - Hauts-de-Seine',
-   'Puteaux': '92 - Hauts-de-Seine',
-   'Neuilly-sur-Seine': '92 - Hauts-de-Seine',
-   'Rueil-Malmaison': '92 - Hauts-de-Seine',
-   'Issy-les-Moulineaux': '92 - Hauts-de-Seine',
-   'Boulogne-Billancourt': '92 - Hauts-de-Seine',
-   'Clichy': '92 - Hauts-de-Seine',
-   'Colombes': '92 - Hauts-de-Seine',
-   'Malakoff': '92 - Hauts-de-Seine',
-   'Châtillon': '92 - Hauts-de-Seine',
-   'Asnières-sur-Seine': '92 - Hauts-de-Seine',
-   'Suresnes': '92 - Hauts-de-Seine',
-   'Montrouge': '92 - Hauts-de-Seine',
-   'Saint-Cloud': '92 - Hauts-de-Seine',
-   'Sèvres': '92 - Hauts-de-Seine',
-   'Antony': '92 - Hauts-de-Seine',
-   'Clamart': '92 - Hauts-de-Seine',
-   'Gennevilliers': '92 - Hauts-de-Seine',
-   
-   'Saint-Denis': '93 - Seine-Saint-Denis',
-   'Montreuil': '93 - Seine-Saint-Denis',
-   'Pantin': '93 - Seine-Saint-Denis',
-   'Noisy-le-Grand': '93 - Seine-Saint-Denis',
-   'Aubervilliers': '93 - Seine-Saint-Denis',
-   'Saint-Ouen': '93 - Seine-Saint-Denis',
-   'La Courneuve': '93 - Seine-Saint-Denis',
-   'Noisy-le-Sec': '93 - Seine-Saint-Denis',
-   'Tremblay-en-France': '93 - Seine-Saint-Denis', 
-   
-   'Créteil': '94 - Val-de-Marne',
-   'Ivry-sur-Seine': '94 - Val-de-Marne', 
-   'Rungis': '94 - Val-de-Marne',
-   'Villejuif': '94 - Val-de-Marne',
-   'Vitry-sur-Seine': '94 - Val-de-Marne',
-   'Saint-Mandé': '94 - Val-de-Marne',
-   'Maisons-Alfort': '94 - Val-de-Marne',
-   'Charenton-le-Pont': '94 - Val-de-Marne',
-   'Fontenay-sous-Bois': '94 - Val-de-Marne',
-   'Le Kremlin-Bicêtre': '94 - Val-de-Marne',
-   'Cachan': '94 - Val-de-Marne',
-   'Arcueil': '94 - Val-de-Marne',
-   
-   'Roissy-en-France': '95 - Val-d\'Oise',
-   'Bezons': '95 - Val-d\'Oise',
-
-   'Jouy En Josas': '78 - Yvelines',  
-   'Versailles': '78 - Yvelines',
-   'Vélizy-Villacoublay': '78 - Yvelines',
-   'Guyancourt': '78 - Yvelines',
-   'Le Chesnay': '78 - Yvelines',
-   'Magny-les-Hameaux': '78 - Yvelines',
-   'Croissy-sur-Seine': '78 - Yvelines',
-   'Bougival': '78 - Yvelines',
-   
-   'Massy': '91 - Essonne',
-   'Orsay': '91 - Essonne',
-   'Gif-sur-Yvette': '91 - Essonne',
-   'Les Ulis': '91 - Essonne',
-   'Saint-Michel-sur-Orge': '91 - Essonne',
-   'Paray-Vieille-Poste': '91 - Essonne',
-   
-   'Lyon': '69 - Rhône',
-   'Villeurbanne': '69 - Rhône',
-   'Écully': '69 - Rhône',
-   'Bron': '69 - Rhône',
-   'Saint-Priest': '69 - Rhône',
-   'Mions': '69 - Rhône',
-   'Givors': '69 - Rhône',
-   'Limonest': '69 - Rhône',
-   'Saint-Genis-les-Ollières': '69 - Rhône',
-   'Saint-Genis-Laval': '69 - Rhône',
-   'Marcy-l\'Étoile': '69 - Rhône',
-   'Craponne': '69 - Rhône',
-   'Tassin-la-Demi-Lune': '69 - Rhône',
-   'Genas': '69 - Rhône',
-   'Meyzieu': '69 - Rhône',
+    # 75 - Paris
+    'Paris': '75 - Paris',
+    'France': '75 - Paris',
+    'Île-de-France': '75 - Paris',
     
-   'Jouy-en-Josas': '78 - Yvelines',
-   'Montigny-le-Bretonneux': '78 - Yvelines',
-   'Poissy': '78 - Yvelines',
-   'Le Vésinet': '78 - Yvelines',
-
-   'Marseille': '13 - Bouches-du-Rhône',
-   'Aix-en-Provence': '13 - Bouches-du-Rhône',
-   'Marignane': '13 - Bouches-du-Rhône',
-   'Les Milles': '13 - Bouches-du-Rhône',
-   'Cassis': '13 - Bouches-du-Rhône', 
-   'Aubagne': '13 - Bouches-du-Rhône', 
-
+    # 77 - Seine-et-Marne
+    'Marne-la-Vallée': '77 - Seine-et-Marne',
+    
+    # 78 - Yvelines
+    'Bougival': '78 - Yvelines',
+    'Croissy-sur-Seine': '78 - Yvelines',
+    'Guyancourt': '78 - Yvelines',
+    'Jouy-en-Josas': '78 - Yvelines',
+    'Jouy En Josas': '78 - Yvelines',
+    'Le Chesnay': '78 - Yvelines',
+    'Le Vésinet': '78 - Yvelines',
+    'Magny-les-Hameaux': '78 - Yvelines',
+    'Montigny-le-Bretonneux': '78 - Yvelines',
+    'Poissy': '78 - Yvelines',
+    'Vélizy-Villacoublay': '78 - Yvelines',
+    'Versailles': '78 - Yvelines',
+    
+    # 91 - Essonne
+    'Gif-sur-Yvette': '91 - Essonne',
+    'Les Ulis': '91 - Essonne',
+    'Massy': '91 - Essonne',
+    'Orsay': '91 - Essonne',
+    'Paray-Vieille-Poste': '91 - Essonne',
     'Saclay': '91 - Essonne',
-    'Le Plessis-Robinson': '92 - Hauts-de-Seine',
-    'Vitrolles': '13 - Bouches-du-Rhône',
-    'France': '75 - Paris',  # Default to Paris for generic "France" entries
-    'Île-de-France': '75 - Paris',  # Default to Paris for generic region entries
-    'Marne-la-Vallée': '77 - Seine-et-Marne',  
-    'Dardilly': '69 - Rhône',  
-    'Gentilly': '94 - Val-de-Marne',
-    'Villepinte': '93 - Seine-Saint-Denis', 
-    'Argenteuil': '95 - Val-d\'Oise',
-    'Épinay-sur-Seine': '93 - Seine-Saint-Denis'
+    'Saint-Michel-sur-Orge': '91 - Essonne',
     
+    # 92 - Hauts-de-Seine
+    'Antony': '92 - Hauts-de-Seine',
+    'Asnières-sur-Seine': '92 - Hauts-de-Seine',
+    'Bagneux': '92 - Hauts-de-Seine',
+    'Bois-Colombes': '92 - Hauts-de-Seine',
+    'Boulogne-Billancourt': '92 - Hauts-de-Seine',
+    'Châtillon': '92 - Hauts-de-Seine',
+    'Clamart': '92 - Hauts-de-Seine',
+    'Clichy': '92 - Hauts-de-Seine',
+    'Colombes': '92 - Hauts-de-Seine',
+    'Courbevoie': '92 - Hauts-de-Seine',
+    'Gennevilliers': '92 - Hauts-de-Seine',
+    'Issy-les-Moulineaux': '92 - Hauts-de-Seine',
+    'La Défense': '92 - Hauts-de-Seine',
+    'Le Plessis-Robinson': '92 - Hauts-de-Seine',
+    'Levallois-Perret': '92 - Hauts-de-Seine',
+    'Malakoff': '92 - Hauts-de-Seine',
+    'Montrouge': '92 - Hauts-de-Seine',
+    'Nanterre': '92 - Hauts-de-Seine',
+    'Neuilly-sur-Seine': '92 - Hauts-de-Seine',
+    'Puteaux': '92 - Hauts-de-Seine',
+    'Rueil-Malmaison': '92 - Hauts-de-Seine',
+    'Saint-Cloud': '92 - Hauts-de-Seine',
+    'Sèvres': '92 - Hauts-de-Seine',
+    'Suresnes': '92 - Hauts-de-Seine',
+    
+    # 93 - Seine-Saint-Denis
+    'Aubervilliers': '93 - Seine-Saint-Denis',
+    'Épinay-sur-Seine': '93 - Seine-Saint-Denis',
+    'La Courneuve': '93 - Seine-Saint-Denis',
+    'Montreuil': '93 - Seine-Saint-Denis',
+    'Noisy-le-Grand': '93 - Seine-Saint-Denis',
+    'Noisy-le-Sec': '93 - Seine-Saint-Denis',
+    'Pantin': '93 - Seine-Saint-Denis',
+    'Saint-Denis': '93 - Seine-Saint-Denis',
+    'Saint-Ouen': '93 - Seine-Saint-Denis',
+    'Tremblay-en-France': '93 - Seine-Saint-Denis',
+    'Villepinte': '93 - Seine-Saint-Denis',
+    
+    # 94 - Val-de-Marne
+    'Arcueil': '94 - Val-de-Marne',
+    'Cachan': '94 - Val-de-Marne',
+    'Charenton-le-Pont': '94 - Val-de-Marne',
+    'Créteil': '94 - Val-de-Marne',
+    'Fontenay-sous-Bois': '94 - Val-de-Marne',
+    'Gentilly': '94 - Val-de-Marne',
+    'Ivry-sur-Seine': '94 - Val-de-Marne',
+    'Le Kremlin-Bicêtre': '94 - Val-de-Marne',
+    'Maisons-Alfort': '94 - Val-de-Marne',
+    'Rungis': '94 - Val-de-Marne',
+    'Saint-Mandé': '94 - Val-de-Marne',
+    'Villejuif': '94 - Val-de-Marne',
+    'Vitry-sur-Seine': '94 - Val-de-Marne',
+    
+    # 95 - Val-d'Oise
+    'Argenteuil': '95 - Val-d\'Oise',
+    'Bezons': '95 - Val-d\'Oise',
+    'Roissy-en-France': '95 - Val-d\'Oise',
+    
+    # 13 - Bouches-du-Rhône
+    'Aix-en-Provence': '13 - Bouches-du-Rhône',
+    'Aubagne': '13 - Bouches-du-Rhône',
+    'Cassis': '13 - Bouches-du-Rhône',
+    'Les Milles': '13 - Bouches-du-Rhône',
+    'Marignane': '13 - Bouches-du-Rhône',
+    'Marseille': '13 - Bouches-du-Rhône',
+    'Vitrolles': '13 - Bouches-du-Rhône',
+    
+    # 69 - Rhône
+    'Bron': '69 - Rhône',
+    'Craponne': '69 - Rhône',
+    'Dardilly': '69 - Rhône',
+    'Écully': '69 - Rhône',
+    'Genas': '69 - Rhône',
+    'Givors': '69 - Rhône',
+    'Limonest': '69 - Rhône',
+    'Lyon': '69 - Rhône',
+    'Marcy-l\'Étoile': '69 - Rhône',
+    'Meyzieu': '69 - Rhône',
+    'Mions': '69 - Rhône',
+    'Saint-Genis-Laval': '69 - Rhône',
+    'Saint-Genis-les-Ollières': '69 - Rhône',
+    'Saint-Priest': '69 - Rhône',
+    'Tassin-la-Demi-Lune': '69 - Rhône',
+    'Villeurbanne': '69 - Rhône'
 }
 
 region_mapping_fr = {
@@ -311,7 +320,7 @@ region_mapping_it = {
    'MI': 'Lombardia', 
    'NA': 'Campania',
    'MB': 'Lombardia', 
-    'PV': 'Lombardia'
+   'PV': 'Lombardia'
 }
 
 dept_mapping_us = {
@@ -435,4 +444,49 @@ region_mapping_us = {
     'DC': 'Northeast',
     'DE': 'Northeast',
     'MD': 'South'
+}
+
+# Country specific cleaning patterns for location data
+CLEANING_PATTERNS = {
+    'France': [
+        (r'télétravail\s*(?:partiel|à)?\s*(?:à|en)?\s*', ''),
+        (r'\b\d{5}\b', ''),
+        (r'\(\d{2,3}\)', ''),
+        (r'\s\d{1,2}(?:er|ème|e)\s*', ' ')
+    ],
+    'Sweden': [
+        (r'distansjobb\s+(?:i|in)\s+', ''),
+        (r'\d{3}\s?\d{2}\s?', '')
+    ],
+    'Italy': [
+        (r'remoto\s+(?:in|a)\s+', ''),
+        (r'parzialmente\s+remoto\s+in\s+', ''),
+        (r'\d{5}\s?', ''),
+        (r',\s*\w+', ''),
+        (r'provincia\s+di\s+', '')
+    ],
+    'USA': [
+        (r'hybrid\s+work\s+in\s+|remote\s+in\s+', ''),
+        (r'\s+\d{5}(?:-\d{4})?', ''),
+        (r',?\s*[a-z]{2}(?:\s+\d{5}(?:-\d{4})?)?$', '')
+    ]
+}
+
+LOCATION_MAPPINGS = {
+    'France': {
+        'departments': dept_mapping_fr,
+        'regions': region_mapping_fr
+    },
+    'Sweden': {
+        'departments': dept_mapping_se,
+        'regions': region_mapping_se
+    },
+    'Italy': {
+        'departments': dept_mapping_it,
+        'regions': region_mapping_it
+    },
+    'USA': {
+        'departments': dept_mapping_us,
+        'regions': region_mapping_us
+    }
 }
