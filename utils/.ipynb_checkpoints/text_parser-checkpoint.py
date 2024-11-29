@@ -8,15 +8,31 @@ from langdetect import LangDetectException, detect
 from nltk import download
 from nltk.corpus import stopwords
 
+from utils.dictionaries import COUNTRIES_LANGUAGES, COUNTRY_CODE_MAP, CONTEXT_PATTERNS, INTERVIEW_STAGES, LANGUAGE_MAP
+
 import utils.dictionaries as dicts
 
 downloaded_stopwords = {}
 PUNCT_REGEX = r'[^\w\s]'
+
+
 STOPWORD_MAP = {
     'french': lambda: stopwords.words('english') + stopwords.words('french'), 
     'italian': lambda: stopwords.words('english') + stopwords.words('italian'),
     'swedish': lambda: stopwords.words('english') + stopwords.words('swedish'), 
     'english': lambda: stopwords.words('english'),
+}
+
+swedish_stopwords = set(stopwords.words('swedish'))
+french_stopwords = set(stopwords.words('french'))
+italian_stopwords = set(stopwords.words('italian'))
+english_stopwords = set(stopwords.words('english'))
+
+COUNTRIES_STOPWORDS = {
+    'SWE': [swedish_stopwords, 'swedish'],
+    'FRA': [french_stopwords, 'french'],
+    'ITA': [italian_stopwords, 'italian'],
+    'USA': [english_stopwords, 'english']
 }
 
 def download_stopwords(language: str) -> None:
@@ -66,44 +82,32 @@ def normalize_group(group: pd.DataFrame) -> pd.DataFrame:
     '''Normalize job description text for a language group.'''  
     print(f'Normalizing text for language group: {group.name}')
     group['job_description_norm'] = group['job_description'].apply(
-        lambda x: normalize_text(x, group.name, dicts.language_map),
+        lambda x: normalize_text(x, group.name, LANGUAGE_MAP),
     )
     return group
 
 
-def extract_keywords(
-    df: pd.DataFrame, 
-    country: str,
-    language: str,
-) -> tuple:
-    '''Extract top keywords from job descriptions for given country/language.
-    
-    Args:
-        df: DataFrame with job descriptions. 
-        country: Country to analyze.
-        language: Language of job descriptions.
-        
-    Returns:
-        Tuple of top 10 keywords and list of all tokens.
-    '''
+# Debug extract_keywords function
+def extract_keywords(df: pd.DataFrame, country_name: str) -> tuple:
+    country_code = COUNTRY_CODE_MAP[country_name]
+    language = dicts.COUNTRIES_LANGUAGES[country_code][1]
+    stop_words = set(stopwords.words(language))
     job_description_col = 'job_description_norm'
     
-    try:
-        stop_words = set(STOPWORD_MAP[language]())
-    except KeyError:
-        raise ValueError(f'Unsupported language: {language}')
-        
+    print(f"Total rows: {len(df)}")
+    print(f"Rows for {country_name}: {len(df[df['country'] == country_name])}")
+    
     df_filtered = (
-        df[df['country'] == country]
+        df[df['country'] == country_name]
         .assign(
-            cleaned_description=lambda x: x[job_description_col].apply(
-                preprocess_text,
-            ),
+            cleaned_description=lambda x: x[job_description_col].apply(preprocess_text),
             tokens=lambda x: x['cleaned_description'].apply(
-                lambda text: tokenize_and_filter(text, stop_words),
-            ),
+                lambda text: tokenize_and_filter(text, stop_words)
+            )
         )
     )
+    
+    print(f"Sample cleaned descriptions: {df_filtered['job_description_norm'].head()}")
     
     all_tokens = df_filtered['tokens'].explode().tolist()
     word_counts = Counter(all_tokens)
@@ -135,8 +139,6 @@ def extract_single_stage(
 
 def extract_interview_details(
     df: pd.DataFrame, 
-    stages: dict,
-    context_patterns: dict,  
     column: str,
     language_column: str = 'language',  
 ) -> tuple:
@@ -144,8 +146,6 @@ def extract_interview_details(
     
     Args:
         df: DataFrame with job descriptions and metadata.  
-        stages: Dict of regex patterns for each interview stage.
-        context_patterns: Dict of context patterns by language. 
         column: Column containing job description text.
         language_column: Column specifying description language.
         
@@ -154,18 +154,18 @@ def extract_interview_details(
     '''
     base_df = df[['job_id', 'search_keyword', 'job_link', language_column]].copy()
     
-    for stage, pattern in stages.items():
+    for stage, pattern in INTERVIEW_STAGES.items():
         base_df[f'{stage}_text'] = df.apply( 
             lambda row: extract_single_stage(
-                row[column], pattern, row[language_column], context_patterns,
+                row[column], pattern, row[language_column], CONTEXT_PATTERNS,
             ),
             axis=1,
         )
         base_df[stage] = base_df[f'{stage}_text'].notna()
         
     text_columns = ['job_id', 'search_keyword', 'job_link'] + [
-        f'{s}_text' for s in stages
+        f'{s}_text' for s in INTERVIEW_STAGES
     ]
-    flag_columns = ['job_id', 'search_keyword', 'job_link'] + list(stages.keys())
+    flag_columns = ['job_id', 'search_keyword', 'job_link'] + list(INTERVIEW_STAGES.keys())
     
     return base_df[text_columns], base_df[flag_columns]

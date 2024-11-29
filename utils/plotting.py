@@ -38,6 +38,10 @@ def plot_boxplot(df: pd.DataFrame, numerical_cols: list[str]) -> tuple[pd.DataFr
     ''' Plot numerical columns in a single boxplot using melted data + identify outliers. Returns outliers_df, original_rows_with_outliers.'''
     plt.figure(figsize=(5, 3))
     melted_df = df[numerical_cols].melt(var_name='Variable', value_name='EUR per month')
+    print("Shape of melted data:", melted_df.shape)
+    print("Number of non-null values per column:")
+    print(melted_df.count())
+    
     ax = sns.boxplot(data=melted_df, x='Variable', y='EUR per month', width=0.2, 
                     color='mediumseagreen', 
                     showfliers=False)

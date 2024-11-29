@@ -3,9 +3,11 @@ import requests
 import numpy as np
 import pandas as pd
 
+from utils.dictionaries import TIME_KEYWORDS
+
 def get_time_keywords(language: str, time_keyword_dict: dict[str, dict[str, str]]) -> dict[str, str]:
     '''Get time unit keywords for different languages.'''
-    return time_keyword_dict.get(language.lower(), time_keyword_dict['english'])
+    return TIME_KEYWORDS.get(language.lower(), TIME_KEYWORDS['english'])
     
 def convert_salary_to_monthly(df: pd.DataFrame, salary_column: str, time_unit_column: str) -> pd.Series:
     '''
@@ -92,7 +94,7 @@ def parse_usa_salary(s: pd.Series) -> pd.DataFrame:
     })
 
 
-def parse_salary_column(df: pd.DataFrame, column_name: str = 'salary', languages: list[str] = ['english'], country: str = 'USA', time_keyword_dict: dict[str, dict[str, str]] = None) -> pd.DataFrame:
+def parse_salary_column(df: pd.DataFrame, column_name: str = 'salary', languages: list[str] = ['english'], country: str = 'USA') -> pd.DataFrame:
     df = df.copy()
 
     # Initialize columns
@@ -128,9 +130,9 @@ def parse_salary_column(df: pd.DataFrame, column_name: str = 'salary', languages
         raise ValueError(f"Unsupported country: {country}")
 
     # Time patterns
-    time_patterns = get_time_keywords(languages[0], time_keyword_dict)
+    time_patterns = get_time_keywords(languages[0], TIME_KEYWORDS)
     if len(languages) > 1:
-        time_patterns_2 = get_time_keywords(languages[1], time_keyword_dict)
+        time_patterns_2 = get_time_keywords(languages[1], TIME_KEYWORDS)
         for key in time_patterns:
             time_patterns[key] = f'{time_patterns[key]}|{time_patterns_2[key]}'
 
@@ -226,3 +228,31 @@ def process_salaries(df: pd.DataFrame) -> pd.DataFrame:
     print("Rows with max salary in EUR:", df_converted['max_salary_month_EUR'].notna().sum())
     
     return df_converted
+
+def update_salary_data(df: pd.DataFrame) -> pd.DataFrame:
+   """Update salary-related columns in the DataFrame for each country."""
+   df = df.copy()
+   
+   for country in df['country'].unique():
+       mask = df['country'] == country
+       unique_langs = df[mask]['language'].unique().tolist()
+       
+       print('*' * 30, f'Retrieving salaries for {country}:', f'Languages: {unique_langs}', sep='\n')
+       
+       result = parse_salary_column(
+           df[mask], 
+           languages=unique_langs, 
+           country=country
+       )
+       
+       print(f'Rows changed for {country}: {result.shape[0]}. Original rows retrieved: {df[mask].shape[0]}')
+       
+       if result.shape[0] != df[mask].shape[0]:
+           print(f"Warning: Size mismatch for {country}. Expected {df[mask].size}, got {result.size}")
+           return df
+           
+       columns_to_update = ['min_salary', 'max_salary', 'currency', 'time_unit']
+       df.loc[mask, columns_to_update] = result[columns_to_update]
+       print('*' * 30 + '\n')
+   
+   return df

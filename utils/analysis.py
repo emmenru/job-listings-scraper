@@ -1,5 +1,7 @@
 import pandas as pd
 
+from utils.dictionaries import COUNTRIES_LANGUAGES, SOFTWARE_KEYWORDS, COUNTRY_CODE_MAP 
+
 def desc_categorical(data: pd.DataFrame) -> None:
     '''Prints value counts for categorical columns in the given DataFrame.'''
     # Exclude these 
@@ -10,7 +12,8 @@ def desc_categorical(data: pd.DataFrame) -> None:
     for col in object_columns.columns:
         print(f"Value counts for column: {col}\n{object_columns[col].value_counts()}\n")
 
-def count_keywords(df: pd.DataFrame, country: str, software_keywords: dict, job_description_col: str, ) -> pd.DataFrame:
+#def count_keywords(df: pd.DataFrame, country: str, software_keywords: dict, job_description_col: str, ) -> pd.DataFrame:
+def count_keywords(df: pd.DataFrame, country: str, job_description_col: str) -> pd.DataFrame:
     '''Count occurrences of keyword and categories in job descriptions.
     
     Args:
@@ -29,12 +32,20 @@ def count_keywords(df: pd.DataFrame, country: str, software_keywords: dict, job_
     '''
     df_filtered = df[df['country'] == country].copy()
     df_filtered[job_description_col] = df_filtered[job_description_col].str.lower()
-    
     keyword_df = pd.DataFrame([
-            (category, keyword) 
-            for category, keywords in software_keywords.items()
-            for keyword in keywords],
-        columns=['Category', 'Keyword'],)
+        (category, keyword) 
+        for category, keywords in SOFTWARE_KEYWORDS.items()
+        for keyword in keywords],
+                            columns=['Category', 'Keyword'])
+    
+    #df_filtered = df[df['country'] == country].copy()
+    #df_filtered[job_description_col] = df_filtered[job_description_col].str.lower()
+    
+    #keyword_df = pd.DataFrame([
+    #        (category, keyword) 
+    #        for category, keywords in software_keywords.items()
+    #        for keyword in keywords],
+    #    columns=['Category', 'Keyword'],)
     
     result = (df_filtered[[job_description_col, 'search_keyword']].assign(key=1).merge(keyword_df.assign(key=1), on='key') .drop('key', axis=1))
     

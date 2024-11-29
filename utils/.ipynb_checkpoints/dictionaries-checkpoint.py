@@ -1,5 +1,5 @@
 # Column names and desired data types
-dtype_dict = {
+DTYPE_DICT = {
     'page': 'int64',  
     'country': 'string', 
     'job_link': 'object', 
@@ -12,65 +12,59 @@ dtype_dict = {
     'job_description': 'string'
 }
 
-# Countries and corresponding currencies
-currency_mapping = {
-    'Sweden': 'SEK',  # Swedish Krona
-    'France': 'EUR',  # Euro
-    'Italy': 'EUR',  # Euro
-    'USA': 'USD'   # US Dollar
-}
-
-# Time periods with monthly conversion factors
-time_period_map = {
-    'hour': 160, 'ora': 160, 'heure': 160,
-    'year': 1/12, 'anno': 1/12, 'par an': 1/12,
-    'week': 4, 'settimana': 4, 'semaine': 4,
-    'day': 20, 'giorno': 20, 'jour': 20,
-    'month': 1, 'mese': 1, 'mois': 1, 'månad': 1
-    }
-
 # Language lables mapped to languages 
-language_map = {
+LANGUAGE_MAP = {
     "en": "english",
     "fr": "french",
     "it": "italian",
     "sv": "swedish"
 }
 
+# Check if these ones could be condensed 
 # Country codes mapped to languages 
-countries_languages = {
+COUNTRIES_LANGUAGES = {
     'SWE': ('Sweden', 'swedish'),
     'FRA': ('France', 'french'),
     'ITA': ('Italy', 'italian'),
     'USA': ('USA', 'english')
 }
 
+COUNTRY_CODE_MAP = {
+    'Sweden': 'SWE',
+    'France': 'FRA', 
+    'Italy': 'ITA',
+    'USA': 'USA'
+}
+
 # Time periods for different languages 
-time_keywords = {
+TIME_KEYWORDS = {
     'english': {'day': 'day', 'year': 'year|annual', 'month': 'month', 'hour': 'hour', 'week': 'week'},
     'french': {'day': 'par jour', 'year': r'par\s*an|annuel|année', 'month': r'par\s*mois|mensuel', 'hour': r'par\s*heure|horaire', 'week': r'par\s*semaine|hebdomadaire'},
     'italian': {'day': 'al giorno', 'year': 'anno|annuale', 'month': 'mese|mensile', 'hour': 'ora|orario', 'week': 'settimana|settimanale'},
     'swedish': {'day': 'per dag', 'year': 'år|årlig', 'month': 'månad|mån', 'hour': 'timme|tim|/h', 'week': 'vecka'}
 }
 
-software_keywords = {
+
+SOFTWARE_KEYWORDS = {
     'Programming Languages/Software': [
-        'python', ' r ', 'sql', 'javascript', 'java', 'c++', 'c#', 'ruby', 
-        'swift', 'kotlin', 'scala', 'matlab', 'sas', 'stata', 'go ', 
+        'python', 'r', 'sql', 'javascript', 'java', 'c++', 'c#', 'ruby', 
+        'swift', 'kotlin', 'scala', 'matlab', 'sas', 'stata', 'go', 
         'php', 'typescript', 'rust', 'bash', 'excel', 'julia'
     ],
     'ML and Statistical Modeling': [
         'scikit-learn', 'tensorflow', 'keras', 'pytorch', 'xgboost', 
         'catboost', 'lightgbm', 'mlpack', 'caret', 'mlr', 'statsmodels', 
-        'mlflow', 'neptune.ai', 'comet.ml', 'sagemaker', 'vertex ai'
+        'neptune.ai', 'comet.ml', 'sagemaker', 'vertex ai'
     ],
-    'Data Vis and BI Tools': [
-        'tableau', 'power bi', 'matplotlib', 'seaborn', 'd3.js', 'looker', 
-        'plotly', 'ggplot2', 'qlik', 'sap', 'looker studio', 'superset', 
-        'metabase', 'thoughtspot'
+    'Data Visualization Tools': [
+        'matplotlib', 'seaborn', 'plotly', 'ggplot2', 'd3.js'
+    ],
+    'BI Tools': [
+        'tableau', 'power bi', 'looker', 'qlik', 'sap', 
+        'superset', 'metabase', 'thoughtspot', 'looker studio'
     ],
     'Big Data Technologies': [
-        'spark', 'hadoop', 'bigquery', 'redshift', 'snowflake', 'databricks', 
+        'spark', 'hadoop', 'bigquery', 'redshift', 'snowflake', 
         'hive', 'kafka', 'hdfs', 'flink', 'storm', 'apache nifi', 
         'spark streaming'
     ],
@@ -84,16 +78,19 @@ software_keywords = {
         'digitalocean', 'heroku'
     ],
     'Development Tools': [
-        'git', 'docker', 'vscode', 'jupyter', 'pycharm', 'rstudio', 
-        'eclipse', 'netbeans', 'intellij idea', 'notepad++', 'sublime text', 
-        'atom'
+        'docker', 'vscode', 'jupyter', 'pycharm', 'rstudio', 
+        'eclipse', 'netbeans', 'intellij idea', 'notepad++', 
+        'sublime text', 'atom'
     ],
-    'Version Control/Collaboration': [
-        'github', 'gitlab', 'bitbucket', 'jira', 'confluence', 'slack', 
-        'trello', 'microsoft teams', 'asana', 'notion'
+    'Version Control': [
+        'git', 'github', 'gitlab', 'bitbucket'
+    ],
+    'Collaboration Tools': [
+        'jira', 'confluence', 'slack', 'trello', 'microsoft teams', 
+        'asana', 'notion'
     ],
     'Containerization/Orchestration': [
-        'docker', 'kubernetes', 'openshift', 'mesos', 'rancher'
+        'kubernetes', 'openshift', 'mesos', 'rancher'
     ],
     'Workflow Management': [
         'airflow', 'luigi', 'prefect', 'kubeflow'
@@ -105,8 +102,9 @@ software_keywords = {
 }
 
 
+
 # Context patterns for interview keywords 
-context_patterns = {
+CONTEXT_PATTERNS = {
     'english': r'recruitment process|interview process',
     'french': r'processus de recrutement|processus d\'entretien',
     'italian': r'processo di reclutamento|processo di colloquio',
@@ -114,7 +112,7 @@ context_patterns = {
 }
 
 # Interview keywords 
-interview_stages = {
+INTERVIEW_STAGES = {
     'phone_screening': r'phone screening|phone interview|video interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju|intervista video|entretien vidéo|visio|entretien en visio',
     'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|technical evaluation|évaluation technique|entrevue technique|prova tecnica|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
     'case_study': r'case study|take-home assignment|business case|mock project|real-world problem|étude de cas|assignation à domicile|assegnazione a casa|business case|caso studio|fallstudie|business case',
@@ -125,7 +123,7 @@ interview_stages = {
 }
 
 # Location mappings for France 
-dept_mapping_fr = {
+DEPT_MAPPING_FR = {
     # 75 - Paris
     'Paris': '75 - Paris',
     'France': '75 - Paris',
@@ -244,7 +242,7 @@ dept_mapping_fr = {
     'Villeurbanne': '69 - Rhône'
 }
 
-region_mapping_fr = {
+REGION_MAPPING_FR = {
    '75': 'Île-de-France',
    '77': 'Île-de-France',
    '78': 'Île-de-France',
@@ -258,7 +256,7 @@ region_mapping_fr = {
 }
 
 # Location mappings for Sweden
-dept_mapping_se = {
+DEPT_MAPPING_SE = {
     'Stockholm': '01 - Stockholm län',
     'Solna': '01 - Stockholm län',
     'Sundbyberg': '01 - Stockholm län',
@@ -276,14 +274,14 @@ dept_mapping_se = {
     'Lund': '12 - Skåne län'
 }
 
-region_mapping_se = {
+REGION_MAPPING_SE = {
     '01': 'Stockholm',
     '14': 'Västra Götaland',
     '12': 'Skåne'
 }
 
 # Location mappings for Italy 
-dept_mapping_it = {
+DEPT_MAPPING_IT = {
     'Roma': 'RM - Roma',
     'Milano': 'MI - Milano',
     'Napoli': 'NA - Napoli',
@@ -315,7 +313,7 @@ dept_mapping_it = {
     'Cernusco Sul Naviglio': 'MI - Milano'
 }
 
-region_mapping_it = {
+REGION_MAPPING_IT = {
    'RM': 'Lazio',
    'MI': 'Lombardia', 
    'NA': 'Campania',
@@ -323,7 +321,7 @@ region_mapping_it = {
    'PV': 'Lombardia'
 }
 
-dept_mapping_us = {
+DEPT_MAPPING_US = {
     # Additional New York area cities/variations
     'New York': 'NY - New York State',
     'Manhattan': 'NY - New York State',
@@ -395,7 +393,7 @@ dept_mapping_us = {
     'Pittsburgh': 'PA - Pennsylvania'
 }
 
-region_mapping_us = {
+REGION_MAPPING_US = {
     'NY': 'Northeast',
     'NJ': 'Northeast',
     'MA': 'Northeast',
@@ -474,19 +472,19 @@ CLEANING_PATTERNS = {
 
 LOCATION_MAPPINGS = {
     'France': {
-        'departments': dept_mapping_fr,
-        'regions': region_mapping_fr
+        'departments': DEPT_MAPPING_FR,
+        'regions': REGION_MAPPING_FR
     },
     'Sweden': {
-        'departments': dept_mapping_se,
-        'regions': region_mapping_se
+        'departments': DEPT_MAPPING_SE,
+        'regions': REGION_MAPPING_SE
     },
     'Italy': {
-        'departments': dept_mapping_it,
-        'regions': region_mapping_it
+        'departments': DEPT_MAPPING_IT,
+        'regions': REGION_MAPPING_IT
     },
     'USA': {
-        'departments': dept_mapping_us,
-        'regions': region_mapping_us
+        'departments': DEPT_MAPPING_US,
+        'regions': REGION_MAPPING_US
     }
 }
