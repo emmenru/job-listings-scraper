@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 
 from utils.dictionaries import COUNTRIES_LANGUAGES, SOFTWARE_KEYWORDS, COUNTRY_CODE_MAP 
@@ -12,49 +13,30 @@ def desc_categorical(data: pd.DataFrame) -> None:
     for col in object_columns.columns:
         print(f"Value counts for column: {col}\n{object_columns[col].value_counts()}\n")
 
-#def count_keywords(df: pd.DataFrame, country: str, software_keywords: dict, job_description_col: str, ) -> pd.DataFrame:
 def count_keywords(df: pd.DataFrame, country: str, job_description_col: str) -> pd.DataFrame:
-    '''Count occurrences of keyword and categories in job descriptions.
-    
-    Args:
-        df: DataFrame with job descriptions and metadata.
-        country: Country to analyze.  
-        software_keywords: Dict mapping keyword categories to keyword lists.
-        job_description_col: Column containing job description text.
-        
-    Returns:    
-        DataFrame with keyword counts by category/country.
-
-    Please note: 
-        For later calculation of relative frequency: note that the total number of job listings will be different from the sum of the counts here.
-        A single job listing can contain multiple keywords (e.g., a job might require both 'python' and 'sql'). 
-        The same job listing will be counted multiple times if it contains multiple keywords. 
-    '''
     df_filtered = df[df['country'] == country].copy()
     df_filtered[job_description_col] = df_filtered[job_description_col].str.lower()
+    
     keyword_df = pd.DataFrame([
         (category, keyword) 
         for category, keywords in SOFTWARE_KEYWORDS.items()
         for keyword in keywords],
-                            columns=['Category', 'Keyword'])
+        columns=['Category', 'Keyword'])
     
-    #df_filtered = df[df['country'] == country].copy()
-    #df_filtered[job_description_col] = df_filtered[job_description_col].str.lower()
-    
-    #keyword_df = pd.DataFrame([
-    #        (category, keyword) 
-    #        for category, keywords in software_keywords.items()
-    #        for keyword in keywords],
-    #    columns=['Category', 'Keyword'],)
-    
-    result = (df_filtered[[job_description_col, 'search_keyword']].assign(key=1).merge(keyword_df.assign(key=1), on='key') .drop('key', axis=1))
-    
-    result['Count'] = result.apply(lambda row: 1 if row['Keyword'] in row[job_description_col] else 0,axis=1,)
-    
-    result = (result[result['Count'] > 0].assign(Country=country)[['Category', 'Keyword', 'Count', 'search_keyword', 'Country']].rename(columns={'search_keyword': 'Search Keyword'}))
-    
-    return (result.groupby(['Category', 'Keyword', 'Search Keyword', 'Country'], observed=True,).sum().reset_index())
+    result = (df_filtered[[job_description_col, 'search_keyword']]
+             .assign(key=1)
+             .merge(keyword_df.assign(key=1), on='key')
+             .drop('key', axis=1))
 
+    # Only search for entire words with boundaries
+    result['Count'] = result.apply(lambda row: 1 if re.search(fr'\b{row["Keyword"]}\b', row[job_description_col], re.IGNORECASE) else 0, axis=1)
+    
+    result = (result[result['Count'] > 0]
+             .assign(Country=country)[['Category', 'Keyword', 'Count', 'search_keyword', 'Country']]
+             .rename(columns={'search_keyword': 'Search Keyword'}))
+    
+    return result.groupby(['Category', 'Keyword', 'Search Keyword', 'Country'], observed=True).sum().reset_index()
+    
 def calculate_country_frequencies(technical_skills: pd.DataFrame, df_combined: pd.DataFrame) -> pd.DataFrame:
     '''
     Calculate keyword frequencies relative to total job listings per country (regardless of search keyword).

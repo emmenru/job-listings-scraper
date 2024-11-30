@@ -15,7 +15,6 @@ import utils.dictionaries as dicts
 downloaded_stopwords = {}
 PUNCT_REGEX = r'[^\w\s]'
 
-
 STOPWORD_MAP = {
     'french': lambda: stopwords.words('english') + stopwords.words('french'), 
     'italian': lambda: stopwords.words('english') + stopwords.words('italian'),
@@ -94,7 +93,7 @@ def extract_keywords(df: pd.DataFrame, country_name: str) -> tuple:
     stop_words = set(stopwords.words(language))
     job_description_col = 'job_description_norm'
     
-    print(f"Total rows: {len(df)}")
+    #print(f"Total rows: {len(df)}")
     print(f"Rows for {country_name}: {len(df[df['country'] == country_name])}")
     
     df_filtered = (
@@ -107,7 +106,7 @@ def extract_keywords(df: pd.DataFrame, country_name: str) -> tuple:
         )
     )
     
-    print(f"Sample cleaned descriptions: {df_filtered['job_description_norm'].head()}")
+    #print(f"Sample cleaned descriptions: {df_filtered['job_description_norm'].head()}")
     
     all_tokens = df_filtered['tokens'].explode().tolist()
     word_counts = Counter(all_tokens)
@@ -136,7 +135,30 @@ def extract_single_stage(
     
     return None
 
+def extract_interview_details(df: pd.DataFrame, column: str, language_column: str = 'language') -> tuple:
+   base_df = df[['job_id', 'search_keyword', 'job_link', language_column]].copy()
+   
+   # Add word boundaries to patterns
+   bounded_patterns = {
+       stage: '|'.join(fr'\b{p}\b' for p in pattern.split('|'))
+       for stage, pattern in INTERVIEW_STAGES.items()
+   }
+   
+   for stage, pattern in bounded_patterns.items():
+       base_df[f'{stage}_text'] = df.apply(
+           lambda row: extract_single_stage(
+               row[column], pattern, row[language_column], CONTEXT_PATTERNS
+           ),
+           axis=1
+       )
+       base_df[stage] = base_df[f'{stage}_text'].notna()
+   
+   text_columns = ['job_id', 'search_keyword', 'job_link'] + [f'{s}_text' for s in INTERVIEW_STAGES]
+   flag_columns = ['job_id', 'search_keyword', 'job_link'] + list(INTERVIEW_STAGES.keys())
+   
+   return base_df[text_columns], base_df[flag_columns]
 
+"""
 def extract_interview_details(
     df: pd.DataFrame, 
     column: str,
@@ -169,3 +191,4 @@ def extract_interview_details(
     flag_columns = ['job_id', 'search_keyword', 'job_link'] + list(INTERVIEW_STAGES.keys())
     
     return base_df[text_columns], base_df[flag_columns]
+"""

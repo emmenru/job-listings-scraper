@@ -110,8 +110,6 @@ def plot_grouped_histograms(df, group_col, value_col, bins=10, kde=True, figsize
     plt.tight_layout()
     plt.show()
 
-
-
 def plot_top_keywords_by_category(df, n_top=5, figsize=(15, 8), title="Top Keywords by Category"):
     '''
     Creates a faceted bar plot showing top keywords in each category.
@@ -151,60 +149,78 @@ def plot_top_keywords_by_category(df, n_top=5, figsize=(15, 8), title="Top Keywo
     plt.tight_layout()
     plt.show()
 
-##################
+def plot_grouped_bar(df, group_col, value_col, figsize=(16, 10), title='Bar Plot', top_n=10, ylim=700):
+    unique_groups = df[group_col].unique()
+    fig, axes = plt.subplots(1, len(unique_groups), figsize=figsize)
 
-def plot_grouped_bar(df, group_col, value_col, figsize=(16, 8), title='Bar Plot', top_n=10):
-  """
-  Plots bar plots for a categorical column grouped by another categorical column.
+    for i, group in enumerate(unique_groups):
+        group_data = df[df[group_col] == group]
+        top_categories = group_data[value_col].value_counts().nlargest(top_n)
 
-  Args:
-      df (DataFrame): The data source.
-      group_col (str): The column to group by (e.g., country).
-      value_col (str): The categorical column to count (e.g., job_title).
-      figsize (tuple): Figure size - made taller by default.
-      title (str): Overall title for the plot.
-      top_n (int): Number of top categories to show.
-  """
+        sns.countplot(
+            data=group_data,
+            x=value_col,
+            order=top_categories.index,
+            color='mediumseagreen',
+            ax=axes[i],
+            width=0.5
+        )
+        axes[i].set_title(group)
+        for label in axes[i].get_xticklabels():
+            label.set_rotation(45)
+            label.set_ha('right')
+        axes[i].set_xlabel('')
+        axes[i].set_ylim(0, ylim)
 
-  unique_groups = df[group_col].unique()
+    plt.suptitle(title)
+    plt.show()
 
-  # Create figure with more bottom space
-  fig, axes = plt.subplots(1, len(unique_groups), figsize=figsize)
-
-  for i, group in enumerate(unique_groups):
-    # Get data for this group
-    group_data = df[df[group_col] == group]
-
-    # Get top n categories for this group
-    top_categories = group_data[value_col].value_counts().nlargest(top_n)
-
-    # Create bar plot
-    sns.countplot(
-        data=group_data,
-        x=value_col,
-        order=top_categories.index,
+def plot_salary_by_keyword(df: pd.DataFrame, figsize: tuple[int, int] = (5, 4)) -> None:
+    '''Create boxplot of salaries by search keyword for France.'''
+    plt.figure(figsize=figsize)
+    
+    sns.boxplot(
+        data=df.query("country == 'France'"),
+        x='search_keyword',
+        y='max_salary_month_EUR',
         color='mediumseagreen',
-        ax=axes[i],
-        width=0.6  # Make bars thinner
+        width=0.25
     )
+    
+    plt.xlabel('Job Title')
+    plt.ylabel('Maximum Monthly Salary (EUR)')
+    plt.title('Salary Distribution by Job Title in France')
+    plt.xticks(rotation=45)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 
-    axes[i].set_title(group)
+def plot_box(df: pd.DataFrame, 
+            y: str = 'max_salary_month_EUR',
+            x: str = 'region',
+            hue: str = 'job_title',
+            figsize: tuple[int, int] = (10, 6)) -> None:
+    '''
+    Create boxplot showing salary distribution by location and job title.
+    '''
+    plt.figure(figsize=figsize)
+    sns.boxplot(
+        data=df,
+        x=x,          # locations on x-axis
+        y=y,          # salary on y-axis
+        hue=hue,      # separate boxes by job title
+        width=0.8
+    )
+    plt.xlabel('Company Location')
+    plt.ylabel('Maximum Monthly Salary (EUR)')
+    plt.title('Salary Distribution by Job Title and Location')
+    plt.xticks(rotation=45)
+    plt.grid(True, alpha=0.3)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
 
-    # Rotate labels at 45 degrees and align them
-    for label in axes[i].get_xticklabels():
-      label.set_rotation(45)
-      label.set_ha('right')  # Align the labels to the right
-
-    # Remove x-label as it's redundant
-    axes[i].set_xlabel('')
-
-  # Overall plot title
-  plt.suptitle(title)
-
-  # Adjust subplot parameters to give specified padding
-  plt.subplots_adjust(bottom=0.2)  # Increase bottom margin
-
-  plt.show()
+##################
 
 def plot_skills_bars(df: pd.DataFrame, 
                    figsize: tuple[int, int] = (15, 8)) -> None:
@@ -283,7 +299,7 @@ def plot_wordtree(
 
 def plot_stacked_bar_chart(df: pd.DataFrame,
                          title: str = "Stacked Bar Chart of Categories by Search Keyword",
-                         colormap: str = 'inferno',
+                         colormap: str = 'gist_ncar',
                          figsize: tuple[int, int] = (16, 10)) -> None:
    '''Creates a stacked bar chart showing category distribution by search keyword.'''
    
@@ -313,7 +329,6 @@ def plot_stacked_bar_chart(df: pd.DataFrame,
    
    plt.tight_layout()
    plt.show()
-
 
 def plot_top_keyword_heatmap(df: pd.DataFrame, 
                          top_n: int = 15, 

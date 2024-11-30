@@ -12,6 +12,16 @@ DTYPE_DICT = {
     'job_description': 'string'
 }
 
+
+# Monthly conversion factors for salaries 
+TIME_PERIOD_MAP = {
+        'hour': 160, 
+        'year': 1/12, 
+        'week': 4,
+        'day': 20, 
+        'month': 1,
+    }
+
 # Language lables mapped to languages 
 LANGUAGE_MAP = {
     "en": "english",
@@ -107,7 +117,7 @@ SOFTWARE_KEYWORDS = {
 CONTEXT_PATTERNS = {
     'english': r'recruitment process|interview process',
     'french': r'processus de recrutement|processus d\'entretien',
-    'italian': r'processo di reclutamento|processo di colloquio',
+    'italian': r'processo di reclutamento|colloquio|selezione del personale',
     'swedish': r'rekryteringsprocess|intervjuprocess'
 }
 

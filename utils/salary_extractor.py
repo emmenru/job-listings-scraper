@@ -3,7 +3,7 @@ import requests
 import numpy as np
 import pandas as pd
 
-from utils.dictionaries import TIME_KEYWORDS
+from utils.dictionaries import TIME_KEYWORDS, TIME_PERIOD_MAP
 
 def get_time_keywords(language: str, time_keyword_dict: dict[str, dict[str, str]]) -> dict[str, str]:
     '''Get time unit keywords for different languages.'''
@@ -20,17 +20,9 @@ def convert_salary_to_monthly(df: pd.DataFrame, salary_column: str, time_unit_co
     Returns:
         A pandas Series containing the monthly equivalent salaries
     '''
-    # Dictionary to map time periods to their monthly conversion factor
-    time_period_map = {
-        'hour': 160, 
-        'year': 1/12, 
-        'week': 4,
-        'day': 20, 
-        'month': 1,
-    }
     
     # Create a categorical type with the mapping dictionary keys
-    period_categories = list(time_period_map.keys())
+    period_categories = list(TIME_PERIOD_MAP.keys())
     
     # Convert time_period column to lowercase and categorical type
     time_periods = pd.Categorical(
@@ -40,10 +32,10 @@ def convert_salary_to_monthly(df: pd.DataFrame, salary_column: str, time_unit_co
     )
     
     # Create a mapping Series for faster lookup
-    conversion_factors = pd.Series(time_period_map)
+    conversion_factors = pd.Series(TIME_PERIOD_MAP)
     
     # Convert time units to lowercase and map directly to conversion factors (preserve NAs)
-    factors = df[time_unit_column].str.lower().map(time_period_map)
+    factors = df[time_unit_column].str.lower().map(TIME_PERIOD_MAP)
 
     # Multiply salary by conversion factors
     return df[salary_column] * factors
