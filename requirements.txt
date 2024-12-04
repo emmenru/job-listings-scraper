@@ -1,11 +1,17 @@
-numpy==1.24.3
-pandas==2.0.3
-spacy==3.7.2
-ipykernel==6.27.1
-jupyterlab==4.0.9
+beautifulsoup4==4.12.3
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+fr_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.8.0/fr_core_news_sm-3.8.0-py3-none-any.whl
+it_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.8.0/it_core_news_sm-3.8.0-py3-none-any.whl
+langdetect==1.0.9
+matplotlib==3.9.2
 missingno==0.5.2
-wordcloud==1.9.3
-langdetect-1.0.9
-joblib-1.4.2 
-nltk-3.9.1 
-regex-2024.11.6
+nltk==3.9.1
+numpy==2.0.2
+pandas==2.2.3
+requests==2.32.3
+scipy==1.14.1
+seaborn==0.13.2
+spacy==3.8.2
+statsmodels==0.14.4
+sv_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/sv_core_news_sm-3.8.0/sv_core_news_sm-3.8.0-py3-none-any.whl
+wordcloud==1.9.4

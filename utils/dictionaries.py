@@ -1,147 +1,139 @@
-# Column names and desired data types
+# Data types and column definitions
 DTYPE_DICT = {
-    'page': 'int64',  
-    'country': 'string', 
-    'job_link': 'object', 
-    'search_keyword': 'category', 
-    'search_location': 'string', 
-    'job_title': 'string', 
-    'company_name': 'string', 
-    'company_location': 'object', 
-    'salary': 'object', 
-    'job_description': 'string'
+   'page': 'int64',  
+   'country': 'string', 
+   'job_link': 'object', 
+   'search_keyword': 'category', 
+   'search_location': 'string', 
+   'job_title': 'string', 
+   'company_name': 'string', 
+   'company_location': 'object', 
+   'salary': 'object', 
+   'job_description': 'string'
 }
 
-
-# Monthly conversion factors for salaries 
-TIME_PERIOD_MAP = {
-        'hour': 160, 
-        'year': 1/12, 
-        'week': 4,
-        'day': 20, 
-        'month': 1,
-    }
-
-# Language lables mapped to languages 
+# Language mappings
 LANGUAGE_MAP = {
-    "en": "english",
-    "fr": "french",
-    "it": "italian",
-    "sv": "swedish"
+   "en": "english",
+   "fr": "french", 
+   "it": "italian",
+   "sv": "swedish"
 }
 
-# Check if these ones could be condensed 
-# Country codes mapped to languages 
 COUNTRIES_LANGUAGES = {
-    'SWE': ('Sweden', 'swedish'),
-    'FRA': ('France', 'french'),
-    'ITA': ('Italy', 'italian'),
-    'USA': ('USA', 'english')
+   'SWE': ('Sweden', 'swedish'),
+   'FRA': ('France', 'french'),
+   'ITA': ('Italy', 'italian'),
+   'USA': ('USA', 'english')
 }
 
 COUNTRY_CODE_MAP = {
-    'Sweden': 'SWE',
-    'France': 'FRA', 
-    'Italy': 'ITA',
-    'USA': 'USA'
+   'Sweden': 'SWE',
+   'France': 'FRA', 
+   'Italy': 'ITA',
+   'USA': 'USA'
 }
 
-# Small map for common_keywords
+# Salary and time-related mappings
+TIME_PERIOD_MAP = {
+   'hour': 160,
+   'year': 1/12,
+   'week': 4,
+   'day': 20,
+   'month': 1,
+}
+
+TIME_KEYWORDS = {
+   'english': {'day': 'day', 'year': 'year|annual', 'month': 'month', 'hour': 'hour', 'week': 'week'},
+   'french': {'day': 'par jour', 'year': r'par\s*an|annuel|année', 'month': r'par\s*mois|mensuel', 'hour': r'par\s*heure|horaire', 'week': r'par\s*semaine|hebdomadaire'},
+   'italian': {'day': 'al giorno', 'year': 'anno|annuale', 'month': 'mese|mensile', 'hour': 'ora|orario', 'week': 'settimana|settimanale'},
+   'swedish': {'day': 'per dag', 'year': 'år|årlig', 'month': 'månad|mån', 'hour': 'timme|tim|/h', 'week': 'vecka'}
+}
+
 KEYWORD_MAP = {
-   'données': 'data', 
-   'dati': 'data',
+   'données': 'data',
+   'dati': 'data', 
    'lavoro': 'work',
-    'working': 'work',
+   'working': 'work',
    'erfarenhet': 'experience'
 }
 
-# Time periods for different languages 
-TIME_KEYWORDS = {
-    'english': {'day': 'day', 'year': 'year|annual', 'month': 'month', 'hour': 'hour', 'week': 'week'},
-    'french': {'day': 'par jour', 'year': r'par\s*an|annuel|année', 'month': r'par\s*mois|mensuel', 'hour': r'par\s*heure|horaire', 'week': r'par\s*semaine|hebdomadaire'},
-    'italian': {'day': 'al giorno', 'year': 'anno|annuale', 'month': 'mese|mensile', 'hour': 'ora|orario', 'week': 'settimana|settimanale'},
-    'swedish': {'day': 'per dag', 'year': 'år|årlig', 'month': 'månad|mån', 'hour': 'timme|tim|/h', 'week': 'vecka'}
-}
-
-
+# Technical skills and interview process
 SOFTWARE_KEYWORDS = {
-    'Programming Languages/Software': [
-        'python', 'r', 'sql', 'javascript', 'java', 'c++', 'c#', 'ruby', 
-        'swift', 'kotlin', 'scala', 'matlab', 'sas', 'stata', 'go', 
-        'php', 'typescript', 'rust', 'bash', 'excel', 'julia'
-    ],
-    'ML and Statistical Modeling': [
-        'scikit-learn', 'tensorflow', 'keras', 'pytorch', 'xgboost', 
-        'catboost', 'lightgbm', 'mlpack', 'caret', 'mlr', 'statsmodels', 
-        'neptune.ai', 'comet.ml', 'sagemaker', 'vertex ai'
-    ],
-    'Data Visualization Tools': [
-        'matplotlib', 'seaborn', 'plotly', 'ggplot2', 'd3.js'
-    ],
-    'BI Tools': [
-        'tableau', 'power bi', 'looker', 'qlik', 'sap', 
-        'superset', 'metabase', 'thoughtspot', 'looker studio'
-    ],
-    'Big Data Technologies': [
-        'spark', 'hadoop', 'bigquery', 'redshift', 'snowflake', 
-        'hive', 'kafka', 'hdfs', 'flink', 'storm', 'apache nifi', 
-        'spark streaming'
-    ],
-    'DBMS': [
-        'mysql', 'postgresql', 'mongodb', 'cassandra', 'oracle', 
-        'microsoft sql server', 'firebase', 'db2', 'couchbase', 
-        'neo4j', 'redis', 'couchdb', 'mariadb'
-    ],
-    'Cloud Computing': [
-        'aws', 'azure', 'google cloud', 'gcp', 'ibm cloud', 'oracle cloud', 
-        'digitalocean', 'heroku'
-    ],
-    'Development Tools': [
-        'docker', 'vscode', 'jupyter', 'pycharm', 'rstudio', 
-        'eclipse', 'netbeans', 'intellij idea', 'notepad++', 
-        'sublime text', 'atom'
-    ],
-    'Version Control': [
-        'git', 'github', 'gitlab', 'bitbucket'
-    ],
-    'Collaboration Tools': [
-        'jira', 'confluence', 'slack', 'trello', 'microsoft teams', 
-        'asana', 'notion'
-    ],
-    'Containerization/Orchestration': [
-        'kubernetes', 'openshift', 'mesos', 'rancher'
-    ],
-    'Workflow Management': [
-        'airflow', 'luigi', 'prefect', 'kubeflow'
-    ],
-    'Data Science Platforms': [
-        'databricks', 'knime', 'h2o.ai', 'rapidminer', 'datarobot', 
-        'mlflow', 'dataiku', 'alteryx', 'talend', 'informatica'
-    ]
+   'Programming Languages/Software': [
+       'python', 'r', 'sql', 'javascript', 'java', 'c++', 'c#', 'ruby', 
+       'swift', 'kotlin', 'scala', 'matlab', 'sas', 'stata', 'go', 
+       'php', 'typescript', 'rust', 'bash', 'excel', 'julia'
+   ],
+   'ML and Statistical Modeling': [
+       'scikit-learn', 'tensorflow', 'keras', 'pytorch', 'xgboost',
+       'catboost', 'lightgbm', 'mlpack', 'caret', 'mlr', 'statsmodels',
+       'neptune.ai', 'comet.ml', 'sagemaker', 'vertex ai'
+   ],
+   'Data Visualization Tools': [
+       'matplotlib', 'seaborn', 'plotly', 'ggplot2', 'd3.js'
+   ],
+   'BI Tools': [
+       'tableau', 'power bi', 'looker', 'qlik', 'sap',
+       'superset', 'metabase', 'thoughtspot', 'looker studio'
+   ],
+   'Big Data Technologies': [
+       'spark', 'hadoop', 'bigquery', 'redshift', 'snowflake',
+       'hive', 'kafka', 'hdfs', 'flink', 'storm', 'apache nifi',
+       'spark streaming'
+   ],
+   'DBMS': [
+       'mysql', 'postgresql', 'mongodb', 'cassandra', 'oracle',
+       'microsoft sql server', 'firebase', 'db2', 'couchbase',
+       'neo4j', 'redis', 'couchdb', 'mariadb'
+   ],
+   'Cloud Computing': [
+       'aws', 'azure', 'google cloud', 'gcp', 'ibm cloud', 'oracle cloud',
+       'digitalocean', 'heroku'
+   ],
+   'Development Tools': [
+       'docker', 'vscode', 'jupyter', 'pycharm', 'rstudio',
+       'eclipse', 'netbeans', 'intellij idea', 'notepad++',
+       'sublime text', 'atom'
+   ],
+   'Version Control': [
+       'git', 'github', 'gitlab', 'bitbucket'
+   ],
+   'Collaboration Tools': [
+       'jira', 'confluence', 'slack', 'trello', 'microsoft teams',
+       'asana', 'notion'
+   ],
+   'Containerization/Orchestration': [
+       'kubernetes', 'openshift', 'mesos', 'rancher'
+   ],
+   'Workflow Management': [
+       'airflow', 'luigi', 'prefect', 'kubeflow'
+   ],
+   'Data Science Platforms': [
+       'databricks', 'knime', 'h2o.ai', 'rapidminer', 'datarobot',
+       'mlflow', 'dataiku', 'alteryx', 'talend', 'informatica'
+   ]
 }
 
-
-
-# Context patterns for interview keywords 
 CONTEXT_PATTERNS = {
-    'english': r'recruitment process|interview process',
-    'french': r'processus de recrutement|processus d\'entretien',
-    'italian': r'processo di reclutamento|colloquio|selezione del personale',
-    'swedish': r'rekryteringsprocess|intervjuprocess'
+   'english': r'recruitment process|interview process',
+   'french': r'processus de recrutement|processus d\'entretien',
+   'italian': r'processo di reclutamento|colloquio|selezione del personale',
+   'swedish': r'rekryteringsprocess|intervjuprocess'
 }
 
-# Interview keywords 
 INTERVIEW_STAGES = {
-    'phone_screening': r'phone screening|phone interview|video interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju|intervista video|entretien vidéo|visio|entretien en visio',
-    'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|technical evaluation|évaluation technique|entrevue technique|prova tecnica|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
-    'case_study': r'case study|take-home assignment|business case|mock project|real-world problem|étude de cas|assignation à domicile|assegnazione a casa|business case|caso studio|fallstudie|business case',
-    'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|data challenge|whiteboard interview|SQL test|Python test|test di programmazione|intervista di programmazione|assessment tecnico|test SQL|test Python|kodningsprov|programmeringstest|teknisk bedömning|sfida di codifica',
-    'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions|entretien comportemental|entretien culturel|entrevue RH|entrevue situationnelle|domande comportamentali|colloquio comportamentale|HR-intervju|beteendefrågor',
-    'on_site_interview': r'on-site interview|final round|in-person interview|panel interview|group interview|entrevue sur place|dernière ligne droite|entrevue en personne|entrevue en panel|entretien collectif|intervista in sede|colloquio finale|colloquio in presenza|intervista di gruppo|panelintervju|slutintervju|intervista di gruppo',
-    'presentation': r'project presentation|technical presentation|mock presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
+   'phone_screening': r'phone screening|phone interview|video interview|screening call|screening téléphonique|entrevue téléphonique|chiamata di screening|colloquio telefonico|telefonintervju|intervista video|entretien vidéo|visio|entretien en visio',
+   'technical_screening': r'technical screening|technical interview|coding screen|technical phone screen|technical evaluation|évaluation technique|entrevue technique|prova tecnica|codice di screening|screening tecnico|teknisk screening|teknisk intervju',
+   'case_study': r'case study|take-home assignment|business case|mock project|real-world problem|étude de cas|assignation à domicile|assegnazione a casa|business case|caso studio|fallstudie|business case',
+   'coding_assessment': r'coding test|coding interview|programming test|technical assessment|live coding challenge|data challenge|whiteboard interview|SQL test|Python test|test di programmazione|intervista di programmazione|assessment tecnico|test SQL|test Python|kodningsprov|programmeringstest|teknisk bedömning|sfida di codifica',
+   'behavioral_interview': r'behavioral interview|cultural interview|HR interview|situational interview|behavioral questions|entretien comportemental|entretien culturel|entrevue RH|entrevue situationnelle|domande comportamentali|colloquio comportamentale|HR-intervju|beteendefrågor',
+   'on_site_interview': r'on-site interview|final round|in-person interview|panel interview|group interview|entrevue sur place|dernière ligne droite|entrevue en personne|entrevue en panel|entretien collectif|intervista in sede|colloquio finale|colloquio in presenza|intervista di gruppo|panelintervju|slutintervju|intervista di gruppo',
+   'presentation': r'project presentation|technical presentation|mock presentation|présentation de projet|présentation technique|presentazione di progetto|presentazione tecnica'
 }
 
-# Location mappings for France 
+# Location mappings 
+
 DEPT_MAPPING_FR = {
     # 75 - Paris
     'Paris': '75 - Paris',
@@ -274,7 +266,6 @@ REGION_MAPPING_FR = {
    '13': 'Provence-Alpes-Côte d\'Azur'
 }
 
-# Location mappings for Sweden
 DEPT_MAPPING_SE = {
     'Stockholm': '01 - Stockholm län',
     'Solna': '01 - Stockholm län',
@@ -463,7 +454,25 @@ REGION_MAPPING_US = {
     'MD': 'South'
 }
 
-# Country specific cleaning patterns for location data
+LOCATION_MAPPINGS = {
+    'France': {
+        'departments': DEPT_MAPPING_FR,
+        'regions': REGION_MAPPING_FR
+    },
+    'Sweden': {
+        'departments': DEPT_MAPPING_SE,
+        'regions': REGION_MAPPING_SE
+    },
+    'Italy': {
+        'departments': DEPT_MAPPING_IT,
+        'regions': REGION_MAPPING_IT
+    },
+    'USA': {
+        'departments': DEPT_MAPPING_US,
+        'regions': REGION_MAPPING_US
+    }
+}
+
 CLEANING_PATTERNS = {
     'France': [
         (r'télétravail\s*(?:partiel|à)?\s*(?:à|en)?\s*', ''),
@@ -487,23 +496,4 @@ CLEANING_PATTERNS = {
         (r'\s+\d{5}(?:-\d{4})?', ''),
         (r',?\s*[a-z]{2}(?:\s+\d{5}(?:-\d{4})?)?$', '')
     ]
-}
-
-LOCATION_MAPPINGS = {
-    'France': {
-        'departments': DEPT_MAPPING_FR,
-        'regions': REGION_MAPPING_FR
-    },
-    'Sweden': {
-        'departments': DEPT_MAPPING_SE,
-        'regions': REGION_MAPPING_SE
-    },
-    'Italy': {
-        'departments': DEPT_MAPPING_IT,
-        'regions': REGION_MAPPING_IT
-    },
-    'USA': {
-        'departments': DEPT_MAPPING_US,
-        'regions': REGION_MAPPING_US
-    }
 }
