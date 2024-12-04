@@ -46,6 +46,15 @@ COUNTRY_CODE_MAP = {
     'USA': 'USA'
 }
 
+# Small map for common_keywords
+KEYWORD_MAP = {
+   'données': 'data', 
+   'dati': 'data',
+   'lavoro': 'work',
+    'working': 'work',
+   'erfarenhet': 'experience'
+}
+
 # Time periods for different languages 
 TIME_KEYWORDS = {
     'english': {'day': 'day', 'year': 'year|annual', 'month': 'month', 'hour': 'hour', 'week': 'week'},

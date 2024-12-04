@@ -116,3 +116,4 @@ def run_mann_whitney_analysis(df: pd.DataFrame, group_column: str, value_column:
   
    print('\nMedian values:')
    print(df.groupby(group_column, observed=True)[value_column].median())
+   print('--------\n')
