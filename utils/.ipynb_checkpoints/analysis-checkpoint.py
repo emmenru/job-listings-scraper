@@ -1,5 +1,10 @@
 import re
 import pandas as pd
+import scipy.stats as stats
+import matplotlib.pyplot as plt
+
+from scipy.stats import kruskal, mannwhitneyu, levene
+from itertools import combinations
 
 from utils.dictionaries import COUNTRIES_LANGUAGES, SOFTWARE_KEYWORDS, COUNTRY_CODE_MAP 
 
@@ -99,3 +104,45 @@ def calculate_frequencies_by_search_keyword(technical_skills: pd.DataFrame, df_c
     results_with_freq = (search_keyword_counts.merge(total_jobs_by_search,left_on='Search Keyword',right_on='search_keyword').assign(Frequency=lambda x: (x['Count'] / x['Total_jobs'] * 100).round(2)).drop('search_keyword', axis=1).sort_values(['Search Keyword', 'Frequency'], ascending=[True, False]))
     
     return results_with_freq
+
+def check_anova_assumptions(model, df, group1, group2, value_column):
+   """Check assumptions for Two-Way ANOVA"""
+   from scipy.stats import shapiro, levene
+   import matplotlib.pyplot as plt
+   
+   # 1. Normality
+   residuals = model.resid
+   stats.probplot(residuals, dist="norm", plot=plt)
+   plt.title("Q-Q plot")
+   plt.show()
+   
+   # Shapiro-Wilk
+   stat, p = shapiro(residuals)
+   print(f"Shapiro-Wilk test:\nStatistic: {stat:.4f}\np-value: {p:.2e}")
+   
+   # 2. Homogeneity of variances
+   groups1 = [group[value_column] for _, group in df.groupby(group1, observed=True)]
+   lev1_stat, lev1_p = levene(*groups1)
+   print(f"\nLevene test for {group1}:\nStatistic: {lev1_stat:.4f}\np-value: {lev1_p:.2e}")
+   
+   groups2 = [group[value_column] for _, group in df.groupby(group2, observed=True)]
+   lev2_stat, lev2_p = levene(*groups2)
+   print(f"\nLevene test for {group2}:\nStatistic: {lev2_stat:.4f}\np-value: {lev2_p:.2e}")
+
+def run_mann_whitney_analysis(df, group_column, value_column):
+   groups = [group[value_column] for name, group in df.groupby(group_column, observed=True)]
+   stat, p = kruskal(*groups)
+   print(f"Kruskal-Wallis test:\nStatistic: {stat:.2f}\np-value: {p:.2e}\n")
+   
+   categories = df[group_column].unique()
+   n_combinations = len(list(combinations(categories, 2)))
+   
+   for a, b in combinations(categories, 2):
+       group1 = df[df[group_column]==a][value_column]
+       group2 = df[df[group_column]==b][value_column]
+       stat, p = mannwhitneyu(group1, group2)
+       p_adjusted = p * n_combinations
+       print(f"{a} vs {b}: p={p_adjusted:.4f}")
+   
+   print("\nMedian values:")
+   print(df.groupby(group_column, observed=True)[value_column].median())

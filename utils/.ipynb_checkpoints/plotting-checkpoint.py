@@ -220,8 +220,6 @@ def plot_box(df: pd.DataFrame,
     plt.tight_layout()
     plt.show()
 
-##################
-
 def plot_skills_bars(df: pd.DataFrame, 
                    figsize: tuple[int, int] = (15, 8)) -> None:
    """Create a grouped bar chart of skills frequency by role, sorted by overall frequency."""
@@ -248,31 +246,6 @@ def plot_skills_bars(df: pd.DataFrame,
    plt.grid(True, alpha=0.3)
    plt.tight_layout()
    plt.show()
-
-def plot_categorical(df: pd.DataFrame, categorical_cols: list[str], top_n: int = 10, 
-                    horizontal: bool = False, figsize: tuple[int, int] = (5, 3)) -> None:
-    """Bar chart plotting for categorical columns."""
-    for col in categorical_cols:
-        # Plot data
-        fig, ax = plt.subplots(figsize=figsize)
-        top_cats = df[col].value_counts().nlargest(top_n)
-        
-        # Choose x or y based on orientation
-        plot_kwargs = {'y': col} if horizontal else {'x': col}
-        
-        sns.countplot(
-            data=df[df[col].isin(top_cats.index)],
-            order=top_cats.index,
-            color='mediumseagreen',
-            ax=ax,
-            **plot_kwargs
-        )
-        
-        # Customize
-        ax.set_title(f'Top {top_n} Categories of Column: {col}')
-        ax.tick_params(axis='x', rotation=45)
-        fig.tight_layout()
-        plt.show()
 
 def plot_wordtree(
     data: list[str], 
@@ -360,18 +333,10 @@ def plot_top_keyword_heatmap(df: pd.DataFrame,
    plt.tight_layout()
    plt.show()
 
+
 def plot_keywords_per_group_subplots(df: pd.DataFrame, group_col: str, keyword_col: str, count_col: str, n_top: int = 5, 
                                          figsize: tuple[int, int] = (16, 12)) -> None:
-    """Creates small subplots for each group in the specified column, showing its top N keywords.
-
-    Args:
-        df (pd.DataFrame): The DataFrame containing the data.
-        group_col (str): The column name to group the data by.
-        keyword_col (str): The column name for the keywords.
-        count_col (str): The column name for the counts.
-        n_top (int, optional): The number of top keywords to display. Defaults to 5.
-        figsize (tuple, optional): The figure size. Defaults to (16, 12).
-    """
+    '''Creates small subplots for each group in the specified column, showing its top N keywords'''
 
     groups = df[group_col].unique()
     n_cols = 3
