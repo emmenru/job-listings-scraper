@@ -1,9 +1,90 @@
 # job-listings-scraper
- Scraper to retrieve job listings from Indeed
 
-scrape-countries : Script to scrape currently available data from job listnings on Indeed based on job title and city, with default settings for search filters (e.g. not sorted by date posted or "remote" only). Please note that there are some differences in terms of filtering properties available for different countries. Tips and tricks: make sure the machine does not go into sleep mode while running the code, since that might disrupt the connection. Requests can be made smaller if this is an issue (e.g. fewer job title keywords or cities). 
+Data Science Job Market Analysis
 
-Please note:
-Ensure that your scraping activities are respectful of the website’s policies. Check the site's robots.txt file (e.g., https://www.indeed.com/robots.txt) to see what is allowed and what is disallowed. Ignoring these policies can result in legal issues or bans.
+This repository contains code for scraping and analyzing job listings data from Indeed, focusing on Data Science roles across different countries. The project provides insights into salary ranges, technical requirements, and role definitions across major cities in the USA, France, Italy, and Sweden.
 
-This data was scraped on September 19th (USA, Sweden) and 20th (France, Italy) 2024. Only the three biggest cities per country were included. 
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [File Descriptions](#file-descriptions)
+3. [Setup and Installation](#setup-and-installation)
+4. [Important Notes](#important-notes)
+
+## Project Overview
+
+This project analyzes Data Science job market trends through automated scraping of Indeed job listings. The analysis reveals salary disparities, varying technical requirements, and different role definitions across countries and position titles.
+
+### Background
+Data Science remains a dynamic field with evolving role definitions. The terminology used to describe positions like Data Scientist, Data Analyst, and BI Analyst varies significantly across companies and countries, creating ambiguity in job market analysis. This project provides a snapshot of the Data Science job market in September 2024, based on Indeed job listings.
+
+### Aim
+To analyze and compare Data Science job roles across major cities in France, Italy, Sweden, and the USA through automated scraping of Indeed job listings, focusing on role requirements, technical skills, and salary distributions.
+
+### Approach
+- Data Collection: Scraped Indeed job listings for 'Data Scientist', 'Data Analyst', 'Product Analyst', and 'BI Scientist'
+- Coverage: Three largest cities per country
+- Timeframe: Data collected September 19th (USA, Sweden) and 20th (France, Italy) 2024
+- Analysis: Statistical comparison of roles and salaries across regions using Python and Tableau
+
+### Findings
+Please refer to step **4. View Results** below. A brief summary is presented at the end of the EDA.ipynb notebook.  
+
+## File Descriptions
+
+### Notebooks
+- **scraper-countries.ipynb**: Jupyter Notebook for scraping job listing data using BeautifulSoup and Selenium
+- **EDA.ipynb**: Jupyter Notebook for data cleaning, formatting, exploratory data analysis, feature extraction and statistical analysis
+- **Dashboard.twb**: Tableau dashboard summarizing the analysis results
+
+### Data
+- **data/**: Directory containing scraped job listings data
+  - **processed/**: Cleaned and processed data used for Tableau visualization
+
+### Utils
+- **utils/web_scraping_utils.py**: Helper functions for web scraping
+- **utils/preprocessor.py**: Initial data processing and preparation functions
+- **utils/salary_extractor.py**: Functions for extracting numerical salary values from text
+- **utils/text_parser.py**: Text processing functions using NLTK
+- **utils/analysis.py**: Statistical analysis functions
+- **utils/dictionaries.py**: Mapping dictionaries for technical skills and language configurations
+- **utils/plotting.py**: Visualization functions
+
+### Configuration
+- **requirements.txt**: Python package dependencies
+
+## Setup and Installation
+
+1. **Clone the repository**:
+    ```bash
+    git clone https://github.com/[your-username]/job-listings-scraper.git
+    cd job-listings-scraper
+    ```
+
+2. **Environment Setup**:
+    - Install Chromium (required for web scraping)
+    - Install Python packages:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. **Run the Analysis**:
+    - Execute notebooks in order:
+        1. `scraper-countries.ipynb` for data collection
+        2. `EDA.ipynb` for analysis
+
+4. **View Results**:
+    - The final dashboard can be viewed on [Tableau Public](https://public.tableau.com/app/profile/emma.frid/viz/DataScienceJobMarketAnalysis_17340041213390/Dashboard2)
+    - Additional project details are available on the [portfolio page](https://sites.google.com/view/emmafrid/project-page-7?authuser=0)
+
+## Important Notes
+
+### Web Scraping Considerations
+- Ensure all scraping activities comply with website policies and terms of service
+- Check the Indeed robots.txt file (https://www.indeed.com/robots.txt) for allowed/disallowed activities
+- Non-compliance with these policies may result in legal issues or IP bans
+
+### Technical Considerations
+- Prevent machine sleep mode during scraping to maintain stable connections
+- Consider reducing request volume (fewer job titles or cities) if connection issues arise
+- Be aware that filtering properties may vary between countries on Indeed
+- The data represents a snapshot from September 19-20, 2024, limited to the three largest cities per country
