@@ -86,4 +86,4 @@ Please refer to step **4. View Results** below. A brief summary is presented at 
 - Prevent machine sleep mode during scraping to maintain stable connections
 - Consider reducing request volume (fewer job titles or cities) if connection issues arise
 - Be aware that filtering properties may vary between countries on Indeed
-- The data represents a snapshot from September 19-20, 2024, limited to the three largest cities per country
+- All search keywords were in English
