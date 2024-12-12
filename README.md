@@ -59,7 +59,7 @@ Please refer to step **4. View Results** below. A brief summary is presented at 
     ```
 
 2. **Environment Setup**:
-    - Install Chromium (required for web scraping)
+    - Install Firefox if you don't already have it (required for web scraping). 
     - Install Python packages:
     ```bash
     pip install -r requirements.txt

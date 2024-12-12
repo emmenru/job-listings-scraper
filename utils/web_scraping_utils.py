@@ -1,184 +1,202 @@
+"""
+Utility functions for web scraping job listings from Indeed.
+Contains functions for browser initialization, DOM manipulation,
+and data extraction from job listings.
+"""
+
 # Standard library imports
-import re
-import time
 import math
 import random
+import re
+import time
+from csv import writer
+from typing import Optional, Union, List
 
 # Third-party library imports
-import requests
 from bs4 import BeautifulSoup
-from lxml import etree as ET
+from lxml import etree as et
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import WebDriverException
-from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
 
-# Function to get DOM from the given URL
-def get_dom(url):
-    """Retrieves the Document Object Model (DOM) from the provided URL.
+# Global variables
+_driver: Optional[webdriver.Firefox] = None
 
-    Handles WebDriver exceptions by restarting the browser if necessary.
 
-    Args:
-        url (str): The URL to retrieve the DOM from.
-
-    Returns:
-        lxml.etree.ElementTree: The DOM representation of the webpage.
-        None: If an error occurs while retrieving the DOM.
-    """
-    global driver
-    try:
-        driver.get(url)
-        # Ensure page loads (consider using WebDriverWait instead)
-        time.sleep(random.uniform(2, 5))
-        page_content = driver.page_source
-        product_soup = BeautifulSoup(page_content, 'html.parser')
-        dom = et.HTML(str(product_soup))
-        return dom
-    except WebDriverException as e:
-        print("WebDriver disconnected, restarting the browser:", e)
-        driver.quit()
-        driver = initialize_driver()
-        return None
-
-# Functions to extract job details
-
-def get_job_link(job):
-    """Extracts the job link from the provided job element using XPath.
-
-    Handles potential errors by returning 'Not available' if the link cannot be found.
-
-    Args:
-        job (lxml.etree.Element): The job element to extract the link from.
-
-    Returns:
-        str: The URL of the job listing.
-        str: 'Not available' if the link cannot be found.
-    """
+# Basic helper functions 
+def get_job_link(job: et._Element) -> str:
+    '''Extract job link from job element.'''
     try:
         return job.xpath('./descendant::h2/a/@href')[0]
     except Exception:
         return 'Not available'
 
-def get_job_desc(job_link):
-    """Extracts the job description from the provided job link.
 
-    Fetches the DOM using get_dom() and then extracts the description text.
-
-    Args:
-        job_link (str): The URL of the job listing.
-
-    Returns:
-        str: The job description text.
-        str: 'Not available' if the description cannot be found.
-    """
-    job_dom = get_dom(job_link)
+def get_job_title(job: et._Element) -> str:
+    '''Extract job title from job element.'''
     try:
-        job_desc = job_dom.xpath('//*[@id="jobDescriptionText"]//text()')
-        return " ".join(job_desc).strip() if job_desc else 'Not available'
+        job_title = job.xpath('./descendant::h2/a/span/text()')[0]
     except Exception:
-        return 'Not available'
+        job_title = 'Not available'
+    return job_title
 
-def get_company_name(job):
-    """Extracts the company name from the provided job element using XPath.
 
-    Handles potential errors by returning 'Not available' if the company name cannot be found.
-
-    Args:
-        job (lxml.etree.Element): The job element to extract the company name from.
-
-    Returns:
-        str: The company name.
-        str: 'Not available' if the company name cannot be found.
-    """
+def get_company_name(job: et._Element) -> str:
+    '''Extract company name from job element.'''
     try:
         company_name = job.xpath('.//span[@data-testid="company-name"]/text()')[0]
     except Exception:
         company_name = 'Not available'
     return company_name
 
-def get_company_location(job):
-    """Extracts the company location from the provided job element using XPath.
 
-    Handles potential errors by returning 'Not available' if the company location cannot be found.
-
-    Args:
-        job (lxml.etree.Element): The job element to extract the company location from.
-
-    Returns:
-        str: The company location.
-        str: 'Not available' if the company location cannot be found.
-    """
+def get_company_location(job: et._Element) -> str:
+    '''Extract company location from job element.'''
     try:
         company_location = job.xpath('.//div[@data-testid="text-location"]/text()')[0]
     except Exception:
         company_location = 'Not available'
     return company_location
 
-def get_salary(job_link):
-    """Extracts the salary information from the provided job link.
 
-    Fetches the DOM using get_dom() and then extracts the salary text.
+# Core browser and DOM manipulation functions
+def initialize_driver() -> webdriver.Firefox:
+    '''Initialize and return a Firefox WebDriver instance.'''
+    global _driver
+    options = Options()
+    service = Service(GeckoDriverManager().install())
+    _driver = webdriver.Firefox(service=service, options=options)
+    return _driver
 
-    Args:
-        job_link (str): The URL of the job listing.
 
-    Returns:
-        str: The salary information.
-        str: 'Not available' if the salary cannot be found.
-    """
+def get_dom(url: str, driver: Optional[webdriver.Firefox] = None) -> Optional[et._Element]:
+    '''Get DOM from the given URL.'''
+    global _driver
+    if driver:
+        _driver = driver
+    try:
+        if not _driver:
+            _driver = initialize_driver()
+        _driver.get(url)
+        wait = WebDriverWait(_driver, 10)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        time.sleep(random.uniform(2, 5))
+        page_content = _driver.page_source
+        product_soup = BeautifulSoup(page_content, 'html.parser')
+        dom = et.HTML(str(product_soup))
+        return dom
+    except WebDriverException as e:
+        print('WebDriver disconnected, restarting the browser:', e)
+        if _driver:
+            _driver.quit()
+        _driver = initialize_driver()
+        return None
+
+
+# Main data extraction functions
+def get_total_pages(driver: webdriver.Firefox, 
+                   job_keyword: str, 
+                   location_keyword: str, 
+                   base_url: str) -> int:
+    '''Calculate total number of pages for job search results.'''
+    url = f'{base_url}/jobs?q={job_keyword}&l={location_keyword}'
+    driver.get(url)
+    try:
+        wait = WebDriverWait(driver, 15)
+        job_count_element = wait.until(
+            EC.presence_of_element_located((By.XPATH, 
+                '//div[contains(@class, "jobsearch-JobCountAndSortPane-jobCount")]'))
+        )
+        job_count_text = job_count_element.text
+        print(f'Job count text: {job_count_text}')
+        
+        job_count = int(''.join(re.findall(r'\d+', job_count_text)))
+        print(f'Parsed job count: {job_count}')
+        
+        if job_count == 0:
+            print('No jobs found.')
+            return 0
+        
+        jobs_per_page = 15
+        total_pages = math.ceil(job_count / jobs_per_page)
+        return total_pages
+    except Exception as e:
+        print(f'Error extracting job count: {e}')
+        return 0
+
+def get_job_desc(job_link: str) -> str:
+    '''Extract job description from job link.'''
     job_dom = get_dom(job_link)
     try:
-        salary = job_dom.xpath('//*[@id="salaryInfoAndJobType"]//text()')
-        return " ".join(salary).strip() if salary else 'Not available'
+        job_desc = job_dom.xpath('//*[@id="jobDescriptionText"]//text()')
+        return ' '.join(job_desc).strip() if job_desc else 'Not available'
     except Exception:
         return 'Not available'
 
-def get_total_pages(driver, job_keyword, location_keyword, base_url):
-    """Calculates the total number of pages based on the estimated number of jobs.
 
-    Uses WebDriverWait to ensure element presence before extracting job count text.
-    Extracts digits using regular expressions and calculates total pages based on jobs per page.
-
-    Args:
-        driver (webdriver.Chrome): The WebDriver instance.
-        job_keyword (str): The keyword to search for jobs.
-        location_keyword (str): The location keyword for job search.
-        base_url (str): The base URL of the job search website.
-
-    Returns:
-        int: The estimated total number of pages containing jobs.
-        0: If an error occurs or no jobs are found.
-    """
-    url = f"{base_url}/jobs?q={job_keyword}&l={location_keyword}"
-    driver.get(url)
+def get_salary(job_link: str) -> str:
+    '''Extract salary information from job link.'''
+    job_dom = get_dom(job_link)
     try:
-        job_count_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "jobsearch-JobCountAndSortPane-jobCount")]'))
-        )
-        job_count_text = job_count_element.text
-        print(f"Job count text: {job_count_text}")
+        salary = job_dom.xpath('//*[@id="salaryInfoAndJobType"]//text()')
+        return ' '.join(salary).strip() if salary else 'Not available'
+    except Exception:
+        return 'Not available'
 
-        # Use regex to find all digits in the job_count_text and join them together
-        job_count = int(''.join(re.findall(r'\d+', job_count_text)))  # Extract only digits
+# Main scraping/orchestration functions
+def process_job(job: et._Element, page_no: int, job_keyword: str, 
+                location_keyword: str, selected_country: str, base_url: str) -> list:
+    '''
+    Process a single job listing and return its data as a list.
+    '''
+    job_link = base_url + get_job_link(job)
+    return [
+        page_no + 1,
+        selected_country,
+        job_link,
+        job_keyword,
+        location_keyword,
+        get_job_title(job),
+        get_company_name(job),
+        get_company_location(job),
+        get_salary(job_link),
+        get_job_desc(job_link)
+    ]
 
-        print(f"Parsed job count: {job_count}")
 
-        # If job count is 0 or not available, handle that gracefully
-        if job_count == 0:
-            print("No jobs found.")
-            return 0
-
-        # Number of jobs listed per page (Indeed typically lists 15 per page)
-        jobs_per_page = 15
-
-        # Calculate total number of pages, rounding up
-        total_pages = math.ceil(job_count / jobs_per_page)
-        return total_pages
-
-    except Exception as e:
-        print(f"Error extracting job count: {e}")
-        return 0
+def scrape_jobs(csv_writer, driver: webdriver.Firefox, job_keywords: List[str], 
+                location_keywords: List[str], selected_country: str, base_url: str) -> None:
+    '''
+    Main scraping function to process all jobs across pages and locations.
+    '''
+    for job_keyword in job_keywords:
+        for location_keyword in location_keywords:
+            print(f"Searching for: {job_keyword} in {location_keyword} ({selected_country})")
+            total_pages = get_total_pages(driver, job_keyword, location_keyword, base_url)
+            print(f"Total pages found in {location_keyword} in {selected_country}: {total_pages}")
+            
+            for page_no in range(total_pages):
+                print(f"Fetching page {page_no + 1} for {job_keyword} in {location_keyword}")
+                url = f"{base_url}/jobs?q={job_keyword}&l={location_keyword}&start={page_no * 10}"
+                page_dom = get_dom(url, driver)
+                
+                if page_dom is None:
+                    print(f"Failed to load page {page_no + 1}, skipping...")
+                    continue
+                
+                jobs = page_dom.xpath('//div[@class="job_seen_beacon"]')
+                print(f"Jobs found on page {page_no + 1}: {len(jobs)}")
+                
+                for job in jobs:
+                    try:
+                        record = process_job(job, page_no, job_keyword, 
+                                          location_keyword, selected_country, base_url)
+                        csv_writer.writerow(record)
+                        time.sleep(random.uniform(2, 5))
+                    except Exception as e:
+                        print(f"Error processing job: {e}")
