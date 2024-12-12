@@ -64,7 +64,7 @@ Please refer to step **4. View Results** below. A brief summary is presented at 
     ```bash
     pip install -r requirements.txt
     ```
-I use a virtual environment to isolate project dependencies, launched in Jupyter Notebook using ipykernel (see e.g. https://janakiev.com/blog/jupyter-virtual-envs/).
+    I use a virtual environment to isolate project dependencies, launched in Jupyter Notebook using ipykernel (see e.g. https://janakiev.com/blog/jupyter-virtual-envs/).
 
 3. **Run the Analysis**:
     - Execute notebooks in order:
