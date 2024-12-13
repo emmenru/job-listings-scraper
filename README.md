@@ -54,7 +54,7 @@ Please refer to step **4. View Results** below. A brief summary is presented at 
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/[your-username]/job-listings-scraper.git
+    git clone https://github.com/emmenru/job-listings-scraper.git
     cd job-listings-scraper
     ```
 
